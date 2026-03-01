@@ -1,5 +1,5 @@
 {
-  "name": "md-peek",
+  "name": "markdown-peek",
   "version": "1.0.0",
   "description": "Markdown preview CLI with live reload",
   "type": "module",
