@@ -1,4 +1,4 @@
-# md-peek
+# markdown-peek
 
 Markdown preview CLI with live reload. Spins up a local web server and renders Markdown files in the browser with real-time updates via Server-Sent Events.
 
