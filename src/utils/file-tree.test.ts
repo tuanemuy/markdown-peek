@@ -1,6 +1,6 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildFileTree } from "./file-tree.js";
 
 const testDir = join(import.meta.dirname, "__test_fixture__");
@@ -90,6 +90,139 @@ describe("buildFileTree", () => {
       const overview = docsDir.children.find((n) => n.name === "overview.md");
       expect(overview?.path).toBe("docs/overview.md");
     }
+  });
+});
+
+describe("buildFileTree with .gitignore", () => {
+  const gitignoreDir = join(import.meta.dirname, "__test_gitignore__");
+
+  beforeAll(() => {
+    mkdirSync(gitignoreDir, { recursive: true });
+    mkdirSync(join(gitignoreDir, "docs"), { recursive: true });
+    mkdirSync(join(gitignoreDir, "vendor"), { recursive: true });
+    mkdirSync(join(gitignoreDir, "output"), { recursive: true });
+
+    writeFileSync(join(gitignoreDir, "README.md"), "# README");
+    writeFileSync(join(gitignoreDir, "docs", "guide.md"), "# Guide");
+    writeFileSync(join(gitignoreDir, "vendor", "lib.md"), "# Lib");
+    writeFileSync(join(gitignoreDir, "output", "result.md"), "# Result");
+
+    writeFileSync(join(gitignoreDir, ".gitignore"), "vendor/\noutput/\n");
+  });
+
+  afterAll(() => {
+    rmSync(gitignoreDir, { recursive: true, force: true });
+  });
+
+  it("excludes directories listed in .gitignore", async () => {
+    const tree = await buildFileTree(gitignoreDir);
+    const allNames = flattenNames(tree);
+
+    expect(allNames).not.toContain("vendor");
+    expect(allNames).not.toContain("output");
+  });
+
+  it("includes directories not listed in .gitignore", async () => {
+    const tree = await buildFileTree(gitignoreDir);
+    const allNames = flattenNames(tree);
+
+    expect(allNames).toContain("docs");
+    expect(allNames).toContain("README.md");
+  });
+});
+
+describe("buildFileTree with nested .gitignore", () => {
+  const nestedDir = join(import.meta.dirname, "__test_nested_gitignore__");
+
+  beforeAll(() => {
+    mkdirSync(join(nestedDir, "docs", "drafts"), { recursive: true });
+    mkdirSync(join(nestedDir, "docs", "published"), { recursive: true });
+    mkdirSync(join(nestedDir, "src", "internal"), { recursive: true });
+    mkdirSync(join(nestedDir, "src", "public"), { recursive: true });
+
+    writeFileSync(join(nestedDir, "README.md"), "# README");
+    writeFileSync(join(nestedDir, "docs", "guide.md"), "# Guide");
+    writeFileSync(join(nestedDir, "docs", "drafts", "wip.md"), "# WIP");
+    writeFileSync(
+      join(nestedDir, "docs", "published", "stable.md"),
+      "# Stable",
+    );
+    writeFileSync(join(nestedDir, "src", "internal", "secret.md"), "# Secret");
+    writeFileSync(join(nestedDir, "src", "public", "api.md"), "# API");
+
+    // Root .gitignore does not exclude docs/ or src/
+    writeFileSync(join(nestedDir, ".gitignore"), "");
+    // Nested .gitignore in docs/ excludes drafts/
+    writeFileSync(join(nestedDir, "docs", ".gitignore"), "drafts/\n");
+    // Nested .gitignore in src/ excludes internal/
+    writeFileSync(join(nestedDir, "src", ".gitignore"), "internal/\n");
+  });
+
+  afterAll(() => {
+    rmSync(nestedDir, { recursive: true, force: true });
+  });
+
+  it("excludes directories listed in nested .gitignore", async () => {
+    const tree = await buildFileTree(nestedDir);
+    const allNames = flattenNames(tree);
+
+    expect(allNames).not.toContain("drafts");
+    expect(allNames).not.toContain("wip.md");
+    expect(allNames).not.toContain("internal");
+    expect(allNames).not.toContain("secret.md");
+  });
+
+  it("includes directories not listed in nested .gitignore", async () => {
+    const tree = await buildFileTree(nestedDir);
+    const allNames = flattenNames(tree);
+
+    expect(allNames).toContain("docs");
+    expect(allNames).toContain("guide.md");
+    expect(allNames).toContain("published");
+    expect(allNames).toContain("stable.md");
+    expect(allNames).toContain("src");
+    expect(allNames).toContain("public");
+    expect(allNames).toContain("api.md");
+  });
+
+  it("nested .gitignore does not affect sibling directories", async () => {
+    const tree = await buildFileTree(nestedDir);
+    const allNames = flattenNames(tree);
+
+    // docs/.gitignore has "drafts/" but src/public should not be affected
+    expect(allNames).toContain("public");
+    expect(allNames).toContain("api.md");
+  });
+});
+
+const isRoot = process.getuid?.() === 0;
+
+describe.skipIf(isRoot)("buildFileTree with unreadable .gitignore", () => {
+  const permDir = join(import.meta.dirname, "__test_gitignore_perm__");
+
+  beforeAll(() => {
+    mkdirSync(join(permDir, "docs"), { recursive: true });
+    writeFileSync(join(permDir, "README.md"), "# README");
+    writeFileSync(join(permDir, "docs", "guide.md"), "# Guide");
+    writeFileSync(join(permDir, ".gitignore"), "some-pattern/\n");
+    chmodSync(join(permDir, ".gitignore"), 0o000);
+  });
+
+  afterAll(() => {
+    chmodSync(join(permDir, ".gitignore"), 0o644);
+    rmSync(permDir, { recursive: true, force: true });
+  });
+
+  it("continues building the tree when .gitignore is unreadable", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const tree = await buildFileTree(permDir);
+    expect(tree.length).toBeGreaterThan(0);
+    expect(tree.some((n) => n.name === "README.md")).toBe(true);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to read .gitignore"),
+      expect.anything(),
+    );
+    warnSpy.mockRestore();
   });
 });
 
