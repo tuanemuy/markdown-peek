@@ -1,10 +1,11 @@
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, resolve } from "node:path";
-import contentCssDefault from "../styles/content.css";
 import tailwindCss from "../generated/global.css";
+import contentCssDefault from "../styles/content.css";
 import type { Result } from "../types/result.js";
-import { err, ok, tryCatch } from "../types/result.js";
+import { ok, tryCatch } from "../types/result.js";
+import { isNodeError } from "../utils/error.js";
 
 export type ResolvedStyles = {
   readonly tailwindCss: string;
@@ -24,21 +25,24 @@ type ReadError = {
 
 export type StylesError = FileNotFoundError | ReadError;
 
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function getXdgConfigPath(): string {
   const xdgConfigHome = process.env.XDG_CONFIG_HOME;
   if (xdgConfigHome) {
     return resolve(xdgConfigHome, "peek", "style.css");
   }
   return resolve(homedir(), ".config", "peek", "style.css");
+}
+
+async function tryReadCss(
+  cssPath: string,
+): Promise<Result<string, StylesError>> {
+  return tryCatch(
+    () => readFile(cssPath, "utf-8"),
+    (e): StylesError =>
+      isNodeError(e) && e.code === "ENOENT"
+        ? { type: "file-not-found", path: cssPath }
+        : { type: "read-error", path: cssPath, cause: e },
+  );
 }
 
 export async function resolveStyles(
@@ -48,25 +52,18 @@ export async function resolveStyles(
     const cssPath = isAbsolute(cssOption)
       ? cssOption
       : resolve(process.cwd(), cssOption);
-    if (!(await fileExists(cssPath))) {
-      return err({ type: "file-not-found", path: cssPath });
-    }
-    const result = await tryCatch(
-      () => readFile(cssPath, "utf-8"),
-      (cause) => ({ type: "read-error" as const, path: cssPath, cause }),
-    );
+    const result = await tryReadCss(cssPath);
     if (!result.ok) return result;
     return ok({ tailwindCss, contentCss: result.value });
   }
 
   const xdgPath = getXdgConfigPath();
-  if (await fileExists(xdgPath)) {
-    const result = await tryCatch(
-      () => readFile(xdgPath, "utf-8"),
-      (cause) => ({ type: "read-error" as const, path: xdgPath, cause }),
-    );
-    if (!result.ok) return result;
-    return ok({ tailwindCss, contentCss: result.value });
+  const xdgResult = await tryReadCss(xdgPath);
+  if (xdgResult.ok) {
+    return ok({ tailwindCss, contentCss: xdgResult.value });
+  }
+  if (xdgResult.error.type === "read-error") {
+    return xdgResult;
   }
 
   return ok({ tailwindCss, contentCss: contentCssDefault });

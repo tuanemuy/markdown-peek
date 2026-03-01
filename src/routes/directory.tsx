@@ -8,6 +8,8 @@ import {
   DirectoryViewPage,
   FilePreviewPage,
 } from "../pages/index.js";
+import { isNodeError } from "../utils/error.js";
+import type { FileTreeNode } from "../utils/file-tree.js";
 import type { FileTreeCache } from "../utils/file-tree-cache.js";
 import { isWithinBase } from "../utils/path.js";
 
@@ -19,7 +21,13 @@ export function createDirectoryRoutes(
   const app = new Hono();
 
   app.get("/", async (c) => {
-    const tree = await treeCache.get();
+    let tree: readonly FileTreeNode[];
+    try {
+      tree = await treeCache.get();
+    } catch (e: unknown) {
+      console.error("[peek] Failed to build file tree:", e);
+      return c.text("Internal server error", 500);
+    }
     const title = basename(dirPath) || dirPath;
     return c.html(
       <DirectoryListPage title={title} tree={tree} styles={styles} />,
@@ -53,8 +61,12 @@ export function createDirectoryRoutes(
           styles={styles}
         />,
       );
-    } catch {
-      return c.text("File not found", 404);
+    } catch (e: unknown) {
+      if (isNodeError(e) && e.code === "ENOENT") {
+        return c.text("File not found", 404);
+      }
+      console.error("[peek] Failed to render file:", e);
+      return c.text("Internal server error", 500);
     }
   });
 
@@ -63,6 +75,9 @@ export function createDirectoryRoutes(
     const fullPath = resolve(dirPath, normalize(relativePath));
     if (!isWithinBase(dirPath, fullPath)) {
       return c.text("Forbidden", 403);
+    }
+    if (!relativePath.endsWith(".md")) {
+      return c.text("Not found", 404);
     }
 
     try {
@@ -76,8 +91,12 @@ export function createDirectoryRoutes(
           styles={styles}
         />,
       );
-    } catch {
-      return c.text("File not found", 404);
+    } catch (e: unknown) {
+      if (isNodeError(e) && e.code === "ENOENT") {
+        return c.text("File not found", 404);
+      }
+      console.error("[peek] Failed to render file:", e);
+      return c.text("Internal server error", 500);
     }
   });
 
