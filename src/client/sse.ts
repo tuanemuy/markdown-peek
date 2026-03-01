@@ -6,6 +6,19 @@ function normalizePath(p: string): string {
   return p ? p.replace(/\\/g, "/") : p;
 }
 
+function parseFileChangedData(raw: string): { path: string } | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!data || typeof data !== "object") return null;
+  const obj = data as Record<string, unknown>;
+  if (typeof obj.path !== "string") return null;
+  return { path: obj.path };
+}
+
 function handleFileChangedFile(): void {
   const contentEl = document.getElementById("markdown-content");
   if (!contentEl) return;
@@ -13,21 +26,29 @@ function handleFileChangedFile(): void {
     .then((res) => res.text())
     .then((html) => {
       contentEl.innerHTML = html;
-    });
+    })
+    .catch((e: unknown) => console.error("[peek] Failed to fetch content:", e));
 }
 
 function handleFileChangedDirectory(e: MessageEvent): void {
   const contentEl = document.getElementById("markdown-content");
   if (!contentEl) return;
-  const data = JSON.parse(e.data) as { path: string };
+  const parsed = parseFileChangedData(e.data);
+  if (!parsed) return;
   const params = new URLSearchParams(window.location.search);
   const currentPath = params.get("path");
-  if (currentPath && normalizePath(data.path) === normalizePath(currentPath)) {
+  if (
+    currentPath &&
+    normalizePath(parsed.path) === normalizePath(currentPath)
+  ) {
     fetch(`/api/content?path=${encodeURIComponent(currentPath)}`)
       .then((res) => res.text())
       .then((html) => {
         contentEl.innerHTML = html;
-      });
+      })
+      .catch((e: unknown) =>
+        console.error("[peek] Failed to fetch content:", e),
+      );
   }
 }
 
@@ -42,7 +63,8 @@ function handleTreeChanged(): void {
         treeEl.innerHTML = html;
         attachTreeToggleHandlers();
       }
-    });
+    })
+    .catch((e: unknown) => console.error("[peek] Failed to fetch tree:", e));
 }
 
 export function initSse(mode: "file" | "directory"): void {

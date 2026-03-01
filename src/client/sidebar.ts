@@ -148,15 +148,13 @@ export function initSidebar(): void {
     if (wasDesktop === nowDesktop) return;
     wasDesktop = nowDesktop;
 
-    const overlay = document.getElementById("sidebar-overlay");
+    const resizeOverlay = document.getElementById("sidebar-overlay");
     if (!isSidebarOpen()) return;
 
     if (nowDesktop) {
-      // Switched to desktop: hide overlay
-      overlay?.classList.add("hidden");
+      resizeOverlay?.classList.add("hidden");
     } else {
-      // Switched to mobile: show overlay for open sidebar
-      overlay?.classList.remove("hidden");
+      resizeOverlay?.classList.remove("hidden");
     }
   });
 }

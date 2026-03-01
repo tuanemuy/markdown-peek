@@ -1,11 +1,11 @@
 const THEME_KEY = "theme";
 
-type Theme = "light" | "dark" | null;
+type Theme = "light" | "dark" | "system";
 
 function getStoredTheme(): Theme {
   const stored = localStorage.getItem(THEME_KEY);
   if (stored === "light" || stored === "dark") return stored;
-  return null;
+  return "system";
 }
 
 function applyTheme(theme: Theme): void {
@@ -15,7 +15,6 @@ function applyTheme(theme: Theme): void {
   } else if (theme === "light") {
     html.classList.remove("dark");
   } else {
-    // system: follow OS preference
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       html.classList.add("dark");
     } else {
@@ -45,7 +44,7 @@ function updateThemeIcon(theme: Theme): void {
 
 function nextTheme(current: Theme): Theme {
   if (current === "light") return "dark";
-  if (current === "dark") return null;
+  if (current === "dark") return "system";
   return "light";
 }
 
@@ -58,10 +57,10 @@ export function initTheme(): void {
   if (toggle) {
     toggle.addEventListener("click", () => {
       const next = nextTheme(getStoredTheme());
-      if (next) {
-        localStorage.setItem(THEME_KEY, next);
-      } else {
+      if (next === "system") {
         localStorage.removeItem(THEME_KEY);
+      } else {
+        localStorage.setItem(THEME_KEY, next);
       }
       applyTheme(next);
       updateThemeIcon(next);
@@ -71,8 +70,8 @@ export function initTheme(): void {
   window
     .matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", () => {
-      if (!getStoredTheme()) {
-        applyTheme(null);
+      if (getStoredTheme() === "system") {
+        applyTheme("system");
       }
     });
 }
