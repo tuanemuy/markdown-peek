@@ -17,7 +17,7 @@ export function DirectoryListPage({
   styles,
 }: DirectoryListPageProps) {
   return (
-    <Document title={title} styles={styles} mode="directory">
+    <Document title={title} styles={styles} mode="directory" dirTitle={title}>
       <PageHeader breadcrumbs={[{ label: title }]} externalLinkHref="/" />
       <main class="p-2 sm:p-5 sm:py-0 md:pt-5 space-y-5">
         <ContentCard>

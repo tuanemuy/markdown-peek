@@ -24,7 +24,12 @@ export function DirectoryViewPage({
   styles,
 }: DirectoryViewPageProps) {
   return (
-    <Document title={fileTitle} styles={styles} mode="directory">
+    <Document
+      title={fileTitle}
+      styles={styles}
+      mode="directory"
+      dirTitle={dirTitle}
+    >
       <Sidebar title={dirTitle} tree={tree} currentPath={currentPath} />
 
       <PageHeader

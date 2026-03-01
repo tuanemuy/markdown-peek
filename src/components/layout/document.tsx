@@ -9,10 +9,17 @@ type DocumentProps = {
   readonly title: string;
   readonly styles: ResolvedStyles;
   readonly mode: "file" | "directory";
+  readonly dirTitle?: string;
   readonly children: Child;
 };
 
-export function Document({ title, styles, mode, children }: DocumentProps) {
+export function Document({
+  title,
+  styles,
+  mode,
+  dirTitle,
+  children,
+}: DocumentProps) {
   return (
     <>
       {raw("<!DOCTYPE html>")}
@@ -31,6 +38,7 @@ export function Document({ title, styles, mode, children }: DocumentProps) {
         <body
           class="bg-background text-foreground min-h-screen"
           data-mode={mode}
+          data-dir-title={dirTitle}
         >
           {children}
           <script>{raw(clientBundle)}</script>

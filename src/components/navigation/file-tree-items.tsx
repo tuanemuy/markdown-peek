@@ -30,7 +30,10 @@ export function FileTreeItems({
                   class="-rotate-180 shrink-0 size-3.5 ms-auto transition-transform"
                 />
               </button>
-              <ul class="ps-7 mt-1 flex flex-col gap-y-1 relative before:absolute before:top-0 before:start-[1.125rem] before:w-px before:h-full before:bg-sidebar-border">
+              <ul
+                data-tree-content
+                class="ps-7 mt-1 flex flex-col gap-y-1 relative before:absolute before:top-0 before:start-[1.125rem] before:w-px before:h-full before:bg-sidebar-border"
+              >
                 {node.children ? (
                   <FileTreeItems
                     nodes={node.children}

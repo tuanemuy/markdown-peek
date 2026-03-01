@@ -1,3 +1,7 @@
+import {
+  BREADCRUMB_CLASSES,
+  SLASH_ICON_HTML,
+} from "../shared/breadcrumb-styles.ts";
 import { attachTreeToggleHandlers } from "./tree-toggle.ts";
 
 function getFileNameFromPath(path: string): string {
@@ -29,11 +33,32 @@ async function navigateToFile(path: string, pushState: boolean): Promise<void> {
     attachTreeToggleHandlers();
   }
 
-  const breadcrumbList = document.querySelector("#header-bar ol");
-  if (breadcrumbList) {
-    const lastItem = breadcrumbList.querySelector("li:last-child");
-    if (lastItem) {
-      lastItem.textContent = getFileNameFromPath(path);
+  const breadcrumbNav = document.querySelector(
+    "#header-bar nav[aria-label='Breadcrumb']",
+  );
+  if (breadcrumbNav) {
+    const ol = breadcrumbNav.querySelector("ol");
+    if (ol) {
+      const dirTitle = document.body.dataset.dirTitle ?? "";
+      const fileName = getFileNameFromPath(path);
+
+      ol.textContent = "";
+
+      const dirLi = document.createElement("li");
+      dirLi.className = BREADCRUMB_CLASSES.dirItem;
+      const dirLink = document.createElement("a");
+      dirLink.className = BREADCRUMB_CLASSES.dirLink;
+      dirLink.href = "/";
+      dirLink.textContent = dirTitle;
+      dirLi.appendChild(dirLink);
+      dirLi.insertAdjacentHTML("beforeend", SLASH_ICON_HTML);
+      ol.appendChild(dirLi);
+
+      const fileLi = document.createElement("li");
+      fileLi.className = BREADCRUMB_CLASSES.fileItem;
+      fileLi.setAttribute("aria-current", "page");
+      fileLi.textContent = fileName;
+      ol.appendChild(fileLi);
     }
   }
 
@@ -73,13 +98,17 @@ export function initNavigation(): void {
     if (!path) return;
 
     e.preventDefault();
-    navigateToFile(path, true);
+    navigateToFile(path, true).catch((e: unknown) =>
+      console.error("[peek] Failed to navigate:", e),
+    );
   });
 
   window.addEventListener("popstate", (e: PopStateEvent) => {
     const state = e.state as { path?: string } | null;
     if (state?.path) {
-      navigateToFile(state.path, false);
+      navigateToFile(state.path, false).catch((e: unknown) =>
+        console.error("[peek] Failed to navigate:", e),
+      );
     } else {
       window.location.reload();
     }
