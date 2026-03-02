@@ -42,12 +42,12 @@
   "dependencies": {
     "@clack/prompts": "^0.10.0",
     "@hono/node-server": "^1.14.1",
+    "@mdit/plugin-tasklist": "^0.23.1",
     "@shikijs/markdown-it": "^4.0.1",
     "gunshi": "^0.29.2",
     "hono": "^4.7.7",
     "ignore": "^7.0.5",
     "markdown-it": "^14.1.1",
-    "markdown-it-task-lists": "^2.1.1",
     "picocolors": "^1.1.1",
     "shiki": "^4.0.1"
   },
