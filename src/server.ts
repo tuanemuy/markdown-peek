@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import type { ResolvedStyles } from "./config/styles.js";
@@ -47,15 +46,6 @@ type AppContext =
 
 function createApp(ctx: AppContext, sse: SseManager): Hono {
   const app = new Hono();
-  const cspNonce = randomBytes(16).toString("base64");
-
-  app.use(async (c, next) => {
-    await next();
-    c.header(
-      "Content-Security-Policy",
-      `default-src 'self'; script-src 'nonce-${cspNonce}'; style-src 'unsafe-inline'; img-src * data:; connect-src 'self'`,
-    );
-  });
 
   app.get("/favicon.ico", (c) => c.body(null, 204));
   app.route("/", sse.app);
@@ -67,7 +57,7 @@ function createApp(ctx: AppContext, sse: SseManager): Hono {
     });
     app.route("/", apiRoutes);
 
-    const fileRoutes = createFileRoutes(ctx.targetPath, ctx.styles, cspNonce);
+    const fileRoutes = createFileRoutes(ctx.targetPath, ctx.styles);
     app.route("/", fileRoutes);
   } else {
     const apiConfig: ApiConfig = {
@@ -78,12 +68,7 @@ function createApp(ctx: AppContext, sse: SseManager): Hono {
     app.route("/", createApiRoutes(apiConfig));
     app.route(
       "/",
-      createDirectoryRoutes(
-        ctx.targetPath,
-        ctx.styles,
-        ctx.treeCache,
-        cspNonce,
-      ),
+      createDirectoryRoutes(ctx.targetPath, ctx.styles, ctx.treeCache),
     );
   }
 

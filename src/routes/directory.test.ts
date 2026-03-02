@@ -26,7 +26,7 @@ describe("directory routes", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/");
     expect(res.status).toBe(200);
@@ -42,7 +42,7 @@ describe("directory routes", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=README.md");
     expect(res.status).toBe(200);
@@ -59,7 +59,7 @@ describe("directory routes", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=docs/guide.md");
     expect(res.status).toBe(200);
@@ -74,7 +74,7 @@ describe("directory routes", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view");
     expect(res.status).toBe(302);
@@ -85,7 +85,7 @@ describe("directory routes", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=nonexistent.md");
     expect(res.status).toBe(404);
@@ -96,7 +96,7 @@ describe("directory routes", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=../../../etc/passwd");
     expect(res.status).toBe(403);
@@ -109,7 +109,7 @@ describe("directory routes - catch-all path", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/README.md");
     expect(res.status).toBe(200);
@@ -125,7 +125,7 @@ describe("directory routes - catch-all path", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/docs/guide.md");
     expect(res.status).toBe(200);
@@ -140,7 +140,7 @@ describe("directory routes - catch-all path", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/nonexistent.md");
     expect(res.status).toBe(404);
@@ -151,7 +151,7 @@ describe("directory routes - catch-all path", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/somefile.txt");
     expect(res.status).toBe(404);
@@ -162,7 +162,7 @@ describe("directory routes - catch-all path", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     // URL-level path normalization resolves ../ before routing,
     // so the handler either rejects with 403 or treats the encoded
@@ -178,7 +178,7 @@ describe("directory routes - security", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=../etc/passwd");
     expect(res.status).toBe(403);
@@ -189,7 +189,7 @@ describe("directory routes - security", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=./../../etc/passwd");
     expect(res.status).toBe(403);
@@ -200,24 +200,10 @@ describe("directory routes - security", () => {
     if (!result.ok) throw new Error("Failed to resolve styles");
     const styles = result.value;
     const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache, "test-nonce");
+    const app = createDirectoryRoutes(testDir, styles, treeCache);
 
     const res = await app.request("/view?path=docs");
     expect(res.status).toBe(404);
   });
 
-  it("GET /view?path=README.md includes CSP nonce in response HTML", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const cspNonce = "test-csp-nonce-123";
-    const app = createDirectoryRoutes(testDir, styles, treeCache, cspNonce);
-
-    const res = await app.request("/view?path=README.md");
-    expect(res.status).toBe(200);
-
-    const html = await res.text();
-    expect(html).toContain(`nonce="${cspNonce}"`);
-  });
 });

@@ -9,22 +9,15 @@ type DirectoryListPageProps = {
   readonly title: string;
   readonly tree: readonly FileTreeNode[];
   readonly styles: ResolvedStyles;
-  readonly cspNonce: string;
 };
 
 export function DirectoryListPage({
   title,
   tree,
   styles,
-  cspNonce,
 }: DirectoryListPageProps) {
   return (
-    <Document
-      title={title}
-      styles={styles}
-      mode="directory"
-      cspNonce={cspNonce}
-    >
+    <Document title={title} styles={styles} mode="directory">
       <PageHeader breadcrumbs={[{ label: title }]} />
       <main class="p-2 sm:p-5 sm:py-0 md:pt-5 space-y-5">
         <ContentCard>

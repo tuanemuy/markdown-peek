@@ -18,7 +18,6 @@ export function createDirectoryRoutes(
   dirPath: string,
   styles: ResolvedStyles,
   treeCache: FileTreeCache,
-  cspNonce: string,
 ): Hono {
   const app = new Hono();
 
@@ -32,12 +31,7 @@ export function createDirectoryRoutes(
     }
     const title = basename(dirPath) || dirPath;
     return c.html(
-      <DirectoryListPage
-        title={title}
-        tree={tree}
-        styles={styles}
-        cspNonce={cspNonce}
-      />,
+      <DirectoryListPage title={title} tree={tree} styles={styles} />,
     );
   });
 
@@ -70,7 +64,6 @@ export function createDirectoryRoutes(
           tree={tree}
           currentPath={relativePath}
           styles={styles}
-          cspNonce={cspNonce}
         />,
       );
     } catch (e: unknown) {
@@ -101,7 +94,6 @@ export function createDirectoryRoutes(
           title={fileTitle}
           htmlContent={html}
           styles={styles}
-          cspNonce={cspNonce}
         />,
       );
     } catch (e: unknown) {

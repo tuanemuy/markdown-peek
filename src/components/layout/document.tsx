@@ -9,17 +9,10 @@ type DocumentProps = {
   readonly title: string;
   readonly styles: ResolvedStyles;
   readonly mode: "file" | "directory";
-  readonly cspNonce: string;
   readonly children: Child;
 };
 
-export function Document({
-  title,
-  styles,
-  mode,
-  cspNonce,
-  children,
-}: DocumentProps) {
+export function Document({ title, styles, mode, children }: DocumentProps) {
   return (
     <>
       {raw("<!DOCTYPE html>")}
@@ -31,7 +24,7 @@ export function Document({
             content="width=device-width, initial-scale=1.0"
           />
           <title>{title} - peek</title>
-          <script nonce={cspNonce}>{raw(themeInitScript)}</script>
+          <script>{raw(themeInitScript)}</script>
           <style>{raw(styles.tailwindCss)}</style>
           <style>
             {raw(styles.contentCss.replaceAll("</style", "<\\/style"))}
@@ -42,7 +35,7 @@ export function Document({
           data-mode={mode}
         >
           {children}
-          <script nonce={cspNonce}>{raw(clientBundle)}</script>
+          <script>{raw(clientBundle)}</script>
         </body>
       </html>
     </>

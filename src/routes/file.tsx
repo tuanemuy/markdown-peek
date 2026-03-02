@@ -9,7 +9,6 @@ import { logger } from "../utils/logger.js";
 export function createFileRoutes(
   filePath: string,
   styles: ResolvedStyles,
-  cspNonce: string,
 ): Hono {
   const app = new Hono();
 
@@ -19,12 +18,7 @@ export function createFileRoutes(
       const html = renderMarkdown(content);
       const title = basename(filePath);
       return c.html(
-        <FilePreviewPage
-          title={title}
-          htmlContent={html}
-          styles={styles}
-          cspNonce={cspNonce}
-        />,
+        <FilePreviewPage title={title} htmlContent={html} styles={styles} />,
       );
     } catch (e: unknown) {
       logger.error("Failed to read file:", e);

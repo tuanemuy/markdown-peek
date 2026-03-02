@@ -8,17 +8,15 @@ type FilePreviewPageProps = {
   readonly title: string;
   readonly htmlContent: string;
   readonly styles: ResolvedStyles;
-  readonly cspNonce: string;
 };
 
 export function FilePreviewPage({
   title,
   htmlContent,
   styles,
-  cspNonce,
 }: FilePreviewPageProps) {
   return (
-    <Document title={title} styles={styles} mode="file" cspNonce={cspNonce}>
+    <Document title={title} styles={styles} mode="file">
       <PageHeader breadcrumbs={[{ label: title }]} />
 
       <MainContent class="px-2 sm:px-5 py-5 sm:py-15">

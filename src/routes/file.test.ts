@@ -22,7 +22,7 @@ describe("file routes", () => {
   it("GET / returns rendered HTML page", async () => {
     const result = await resolveStyles();
     if (!result.ok) throw new Error("Failed to resolve styles");
-    const app = createFileRoutes(testFile, result.value, "test-nonce");
+    const app = createFileRoutes(testFile, result.value);
 
     const res = await app.request("/");
     expect(res.status).toBe(200);
@@ -39,11 +39,7 @@ describe("file routes - edge cases", () => {
   it("returns 500 for non-existent file", async () => {
     const result = await resolveStyles();
     if (!result.ok) throw new Error("Failed to resolve styles");
-    const app = createFileRoutes(
-      join(testDir, "non-existent.md"),
-      result.value,
-      "test-nonce",
-    );
+    const app = createFileRoutes(join(testDir, "non-existent.md"), result.value);
 
     const res = await app.request("/");
     expect(res.status).toBe(500);
@@ -55,7 +51,7 @@ describe("file routes - edge cases", () => {
 
     const result = await resolveStyles();
     if (!result.ok) throw new Error("Failed to resolve styles");
-    const app = createFileRoutes(emptyFile, result.value, "test-nonce");
+    const app = createFileRoutes(emptyFile, result.value);
 
     const res = await app.request("/");
     expect(res.status).toBe(200);

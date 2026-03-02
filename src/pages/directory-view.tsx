@@ -14,7 +14,6 @@ type DirectoryViewPageProps = {
   readonly tree: readonly FileTreeNode[];
   readonly currentPath: string;
   readonly styles: ResolvedStyles;
-  readonly cspNonce: string;
 };
 
 export function DirectoryViewPage({
@@ -24,15 +23,9 @@ export function DirectoryViewPage({
   tree,
   currentPath,
   styles,
-  cspNonce,
 }: DirectoryViewPageProps) {
   return (
-    <Document
-      title={fileTitle}
-      styles={styles}
-      mode="directory"
-      cspNonce={cspNonce}
-    >
+    <Document title={fileTitle} styles={styles} mode="directory">
       <Sidebar title={dirTitle} tree={tree} currentPath={currentPath} />
 
       <PageHeader
