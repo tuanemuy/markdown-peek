@@ -125,6 +125,7 @@
   .shiki,
   .shiki span {
     color: var(--shiki-light);
+    background-color: var(--shiki-light-bg);
     background-color: #f1f0e9;
   }
 
