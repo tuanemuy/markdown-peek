@@ -24,14 +24,16 @@ export type SseManager = {
   readonly app: Hono;
   readonly broadcast: (event: string, data: string) => void;
   readonly closeAll: () => void;
-  readonly clients: Set<SSEClient>;
+  readonly clientCount: number;
 };
+
+const KEEP_ALIVE_INTERVAL_MS = 30_000;
 
 export function createSseManager(): SseManager {
   const clients = new Set<SSEClient>();
 
   function broadcast(event: string, data: string): void {
-    for (const client of clients) {
+    for (const client of Array.from(clients)) {
       client.send(event, data);
     }
   }
@@ -73,7 +75,7 @@ export function createSseManager(): SseManager {
       // Keep connection alive with comment lines
       while (!closed) {
         try {
-          await sleep(30000, abortController.signal);
+          await sleep(KEEP_ALIVE_INTERVAL_MS, abortController.signal);
         } catch {
           break;
         }
@@ -84,5 +86,12 @@ export function createSseManager(): SseManager {
     });
   });
 
-  return { app, broadcast, closeAll, clients };
+  return {
+    app,
+    broadcast,
+    closeAll,
+    get clientCount() {
+      return clients.size;
+    },
+  };
 }
