@@ -1,14 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, resolve } from "node:path";
-import tailwindCss from "../generated/global.css";
 import contentCssDefault from "../styles/content.css";
 import type { Result } from "../types/result.js";
 import { map, ok, tryCatch } from "../types/result.js";
 import { isNodeError } from "../utils/error.js";
 
 export type ResolvedStyles = {
-  readonly tailwindCss: string;
   readonly contentCss: string;
 };
 
@@ -53,17 +51,17 @@ export async function resolveStyles(
       ? cssOption
       : resolve(process.cwd(), cssOption);
     const result = await tryReadCss(cssPath);
-    return map(result, (contentCss) => ({ tailwindCss, contentCss }));
+    return map(result, (contentCss) => ({ contentCss }));
   }
 
   const xdgPath = getXdgConfigPath();
   const xdgResult = await tryReadCss(xdgPath);
   if (xdgResult.ok) {
-    return ok({ tailwindCss, contentCss: xdgResult.value });
+    return ok({ contentCss: xdgResult.value });
   }
   if (xdgResult.error.type === "read-error") {
     return xdgResult;
   }
 
-  return ok({ tailwindCss, contentCss: contentCssDefault });
+  return ok({ contentCss: contentCssDefault });
 }

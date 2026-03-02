@@ -1,7 +1,8 @@
 import { raw } from "hono/html";
 import type { Child } from "hono/jsx";
-import type { ResolvedStyles } from "../../config/styles.js";
-import { clientBundle } from "../../generated/client-bundle.js";
+import type { ResolvedStyles } from "../config/styles.js";
+import globalCss from "./global.css";
+import { clientBundle } from "./client-bundle.js";
 
 const themeInitScript = `(function(){var t=localStorage.getItem("theme");if(t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")})()`;
 
@@ -25,7 +26,7 @@ export function Document({ title, styles, mode, children }: DocumentProps) {
           />
           <title>{title} - peek</title>
           <script>{raw(themeInitScript)}</script>
-          <style>{raw(styles.tailwindCss)}</style>
+          <style>{raw(globalCss)}</style>
           <style>
             {raw(styles.contentCss.replaceAll("</style", "<\\/style"))}
           </style>

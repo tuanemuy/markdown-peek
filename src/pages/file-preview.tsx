@@ -1,4 +1,4 @@
-import { Document } from "../components/layout/document.js";
+import { Document } from "../renderer/document.js";
 import { MainContent } from "../components/layout/main-content.js";
 import { MarkdownContent } from "../components/layout/markdown-content.js";
 import { PageHeader } from "../components/layout/page-header.js";

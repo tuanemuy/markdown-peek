@@ -40,7 +40,6 @@ describe("resolveStyles", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.contentCss).toContain(".markdown-body");
-    expect(result.value.tailwindCss).toBeDefined();
   });
 
   it("loads custom CSS from --css option", async () => {
@@ -55,13 +54,6 @@ describe("resolveStyles", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.type).toBe("file-not-found");
-  });
-
-  it("always includes tailwindCss", async () => {
-    const result = await resolveStyles();
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(typeof result.value.tailwindCss).toBe("string");
   });
 
   it("loads CSS from XDG_CONFIG_HOME when set", async () => {

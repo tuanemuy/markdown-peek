@@ -13,11 +13,11 @@
     "access": "public"
   },
   "scripts": {
-    "dev:css": "postcss src/styles/global.css -o src/generated/global.css --watch",
+    "dev:css": "postcss src/styles/global.css -o src/renderer/global.css --watch",
     "dev:server": "tsx --import ./src/loaders/css.mjs src/index.ts",
     "dev": "pnpm run \"/^dev:.*/\"",
-    "pretest": "postcss src/styles/global.css -o src/generated/global.css && node scripts/build-client.mjs",
-    "build:css": "postcss src/styles/global.css -o src/generated/global.css --env production",
+    "pretest": "postcss src/styles/global.css -o src/renderer/global.css && node scripts/build-client.mjs",
+    "build:css": "postcss src/styles/global.css -o src/renderer/global.css --env production",
     "build:client": "node scripts/build-client.mjs",
     "build": "pnpm build:css && pnpm build:client && tsdown",
     "start": "node dist/index.js",
