@@ -1,9 +1,10 @@
 import type { Dirent } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, realpath } from "node:fs/promises";
 import { join, relative } from "node:path";
 import ignore, { type Ignore } from "ignore";
 import { tryCatch } from "../types/result.js";
 import { isNodeError } from "./error.js";
+import { logger } from "./logger.js";
 
 export type FileTreeNode = {
   readonly name: string;
@@ -41,7 +42,7 @@ async function readGitignore(path: string): Promise<Ignore | null> {
   }
 
   if (!(isNodeError(result.error) && result.error.code === "ENOENT")) {
-    console.warn(`[peek] Failed to read .gitignore at ${path}:`, result.error);
+    logger.warn(`Failed to read .gitignore at ${path}:`, result.error);
   }
 
   return null;
@@ -94,14 +95,29 @@ export async function buildFileTree(
     rules.push({ ig: rootGitignore, baseDir: "" });
   }
 
-  return processEntries(rootEntries, rootDir, rootDir, rules);
+  const rootReal = await realpath(rootDir);
+  const visited = new Set<string>([rootReal]);
+
+  return processEntries(rootEntries, rootDir, rootDir, rules, visited);
 }
 
 async function scanDirectory(
   dir: string,
   rootDir: string,
   parentRules: readonly IgnoreRule[],
+  visited: Set<string>,
 ): Promise<FileTreeNode[]> {
+  let real: string;
+  try {
+    real = await realpath(dir);
+  } catch {
+    return []; // broken symlink → skip
+  }
+  if (visited.has(real)) {
+    return [];
+  }
+  visited.add(real);
+
   const entries = await readdir(dir, { withFileTypes: true });
 
   const localGitignore = await tryLoadGitignoreFromEntries(dir, entries);
@@ -109,7 +125,7 @@ async function scanDirectory(
     ? [...parentRules, { ig: localGitignore, baseDir: relative(rootDir, dir) }]
     : parentRules;
 
-  return processEntries(entries, dir, rootDir, rules);
+  return processEntries(entries, dir, rootDir, rules, visited);
 }
 
 async function processEntries(
@@ -117,8 +133,10 @@ async function processEntries(
   dir: string,
   rootDir: string,
   rules: readonly IgnoreRule[],
+  visited: Set<string>,
 ): Promise<FileTreeNode[]> {
-  const nodes: FileTreeNode[] = [];
+  const fileNodes: FileTreeNode[] = [];
+  const dirPromises: Promise<FileTreeNode | null>[] = [];
 
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
@@ -129,19 +147,22 @@ async function processEntries(
     if (entry.isDirectory()) {
       if (isPathIgnored(relPath, true, rules)) continue;
 
-      const children = await scanDirectory(fullPath, rootDir, rules);
-      if (children.length > 0) {
-        nodes.push({
-          name: entry.name,
-          path: relPath,
-          type: "directory",
-          children,
-        });
-      }
+      dirPromises.push(
+        scanDirectory(fullPath, rootDir, rules, visited).then((children) =>
+          children.length > 0
+            ? {
+                name: entry.name,
+                path: relPath,
+                type: "directory" as const,
+                children,
+              }
+            : null,
+        ),
+      );
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       if (isPathIgnored(relPath, false, rules)) continue;
 
-      nodes.push({
+      fileNodes.push({
         name: entry.name,
         path: relPath,
         type: "file",
@@ -149,11 +170,17 @@ async function processEntries(
     }
   }
 
+  const dirResults = await Promise.all(dirPromises);
+  const dirNodes = dirResults.filter(
+    (node): node is FileTreeNode => node !== null,
+  );
+
+  const nodes = [...dirNodes, ...fileNodes];
   nodes.sort((a, b) => {
     if (a.type !== b.type) {
       return a.type === "directory" ? -1 : 1;
     }
-    return a.name.localeCompare(b.name);
+    return a.name.localeCompare(b.name, "en");
   });
 
   return nodes;

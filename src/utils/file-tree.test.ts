@@ -219,6 +219,7 @@ describe.skipIf(isRoot)("buildFileTree with unreadable .gitignore", () => {
     expect(tree.length).toBeGreaterThan(0);
     expect(tree.some((n) => n.name === "README.md")).toBe(true);
     expect(warnSpy).toHaveBeenCalledWith(
+      "[peek]",
       expect.stringContaining("Failed to read .gitignore"),
       expect.anything(),
     );
