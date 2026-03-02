@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/tuanemuy/markdown-peek/compare/v1.0.0...v1.0.1) (2026-03-02)
+
+
+### Bug Fixes
+
+* improve atomicity and type safety in DOM updater modules ([589c28e](https://github.com/tuanemuy/markdown-peek/commit/589c28e307f9eac2c008c8d5738684e31cfa536c))
+
 # 1.0.0 (2026-03-02)
 
 
