@@ -4,6 +4,7 @@ import { MarkdownContent } from "../components/layout/markdown-content.js";
 import { PageHeader } from "../components/layout/page-header.js";
 import { Sidebar } from "../components/navigation/sidebar.js";
 import type { ResolvedStyles } from "../config/styles.js";
+
 import type { FileTreeNode } from "../utils/file-tree.js";
 
 type DirectoryViewPageProps = {
@@ -13,6 +14,7 @@ type DirectoryViewPageProps = {
   readonly tree: readonly FileTreeNode[];
   readonly currentPath: string;
   readonly styles: ResolvedStyles;
+  readonly cspNonce: string;
 };
 
 export function DirectoryViewPage({
@@ -22,13 +24,14 @@ export function DirectoryViewPage({
   tree,
   currentPath,
   styles,
+  cspNonce,
 }: DirectoryViewPageProps) {
   return (
     <Document
       title={fileTitle}
       styles={styles}
       mode="directory"
-      dirTitle={dirTitle}
+      cspNonce={cspNonce}
     >
       <Sidebar title={dirTitle} tree={tree} currentPath={currentPath} />
 
@@ -36,7 +39,7 @@ export function DirectoryViewPage({
         id="header-bar"
         breadcrumbs={[{ label: dirTitle, href: "/" }, { label: fileTitle }]}
         showSidebarToggle
-        externalLinkHref={currentPath}
+        externalLinkHref={`/view?path=${encodeURIComponent(currentPath)}`}
       />
 
       <MainContent class="px-5 sm:px-10 py-5 sm:py-10">

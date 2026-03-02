@@ -9,7 +9,7 @@ type DocumentProps = {
   readonly title: string;
   readonly styles: ResolvedStyles;
   readonly mode: "file" | "directory";
-  readonly dirTitle?: string;
+  readonly cspNonce: string;
   readonly children: Child;
 };
 
@@ -17,7 +17,7 @@ export function Document({
   title,
   styles,
   mode,
-  dirTitle,
+  cspNonce,
   children,
 }: DocumentProps) {
   return (
@@ -31,17 +31,18 @@ export function Document({
             content="width=device-width, initial-scale=1.0"
           />
           <title>{title} - peek</title>
-          <script>{raw(themeInitScript)}</script>
+          <script nonce={cspNonce}>{raw(themeInitScript)}</script>
           <style>{raw(styles.tailwindCss)}</style>
-          <style>{raw(styles.contentCss)}</style>
+          <style>
+            {raw(styles.contentCss.replaceAll("</style", "<\\/style"))}
+          </style>
         </head>
         <body
           class="bg-background text-foreground min-h-screen"
           data-mode={mode}
-          data-dir-title={dirTitle}
         >
           {children}
-          <script>{raw(clientBundle)}</script>
+          <script nonce={cspNonce}>{raw(clientBundle)}</script>
         </body>
       </html>
     </>

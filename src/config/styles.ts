@@ -4,7 +4,7 @@ import { isAbsolute, resolve } from "node:path";
 import tailwindCss from "../generated/global.css";
 import contentCssDefault from "../styles/content.css";
 import type { Result } from "../types/result.js";
-import { ok, tryCatch } from "../types/result.js";
+import { map, ok, tryCatch } from "../types/result.js";
 import { isNodeError } from "../utils/error.js";
 
 export type ResolvedStyles = {
@@ -53,8 +53,7 @@ export async function resolveStyles(
       ? cssOption
       : resolve(process.cwd(), cssOption);
     const result = await tryReadCss(cssPath);
-    if (!result.ok) return result;
-    return ok({ tailwindCss, contentCss: result.value });
+    return map(result, (contentCss) => ({ tailwindCss, contentCss }));
   }
 
   const xdgPath = getXdgConfigPath();

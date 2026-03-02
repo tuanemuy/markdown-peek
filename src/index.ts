@@ -12,6 +12,8 @@ import { initMarkdown } from "./markdown/renderer.js";
 import type { ServerInstance } from "./server.js";
 import { startServer } from "./server.js";
 
+import { logger } from "./utils/logger.js";
+
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json");
 
@@ -74,7 +76,12 @@ $ peek README.md --css ./custom.css --no-open`,
       process.exit(1);
     }
 
-    if (Number.isNaN(port) || port < 1 || port > 65535) {
+    if (
+      Number.isNaN(port) ||
+      !Number.isInteger(port) ||
+      port < 1 ||
+      port > 65535
+    ) {
       cancel(`Invalid port number: ${port}`);
       process.exit(1);
     }
@@ -133,12 +140,13 @@ $ peek README.md --css ./custom.css --no-open`,
 
     outro(pc.dim("Press Ctrl+C to stop"));
 
-    const shutdown = () => {
+    let shuttingDown = false;
+    const shutdown = async () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
       console.log();
       intro(pc.bgYellow(pc.black(" Shutting down... ")));
-      server.sseCloseAll();
-      server.watcher.close();
-      server.close();
+      await server.shutdown();
       outro(pc.green("Server stopped. Bye!"));
       process.exit(0);
     };
@@ -164,7 +172,7 @@ function openBrowser(url: string): void {
   }
   execFile(cmd, args, (err) => {
     if (err) {
-      console.error(`Failed to open browser: ${err.message}`);
+      logger.error(`Failed to open browser: ${err.message}`);
     }
   });
 }

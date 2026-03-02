@@ -11,12 +11,14 @@ import {
 import { isNodeError } from "../utils/error.js";
 import type { FileTreeNode } from "../utils/file-tree.js";
 import type { FileTreeCache } from "../utils/file-tree-cache.js";
+import { logger } from "../utils/logger.js";
 import { isWithinBase } from "../utils/path.js";
 
 export function createDirectoryRoutes(
   dirPath: string,
   styles: ResolvedStyles,
   treeCache: FileTreeCache,
+  cspNonce: string,
 ): Hono {
   const app = new Hono();
 
@@ -25,12 +27,17 @@ export function createDirectoryRoutes(
     try {
       tree = await treeCache.get();
     } catch (e: unknown) {
-      console.error("[peek] Failed to build file tree:", e);
+      logger.error("Failed to build file tree:", e);
       return c.text("Internal server error", 500);
     }
     const title = basename(dirPath) || dirPath;
     return c.html(
-      <DirectoryListPage title={title} tree={tree} styles={styles} />,
+      <DirectoryListPage
+        title={title}
+        tree={tree}
+        styles={styles}
+        cspNonce={cspNonce}
+      />,
     );
   });
 
@@ -43,6 +50,10 @@ export function createDirectoryRoutes(
     const fullPath = resolve(dirPath, normalize(relativePath));
     if (!isWithinBase(dirPath, fullPath)) {
       return c.text("Forbidden", 403);
+    }
+
+    if (!relativePath.endsWith(".md")) {
+      return c.text("Not found", 404);
     }
 
     try {
@@ -59,13 +70,14 @@ export function createDirectoryRoutes(
           tree={tree}
           currentPath={relativePath}
           styles={styles}
+          cspNonce={cspNonce}
         />,
       );
     } catch (e: unknown) {
       if (isNodeError(e) && e.code === "ENOENT") {
         return c.text("File not found", 404);
       }
-      console.error("[peek] Failed to render file:", e);
+      logger.error("Failed to render file:", e);
       return c.text("Internal server error", 500);
     }
   });
@@ -89,13 +101,14 @@ export function createDirectoryRoutes(
           title={fileTitle}
           htmlContent={html}
           styles={styles}
+          cspNonce={cspNonce}
         />,
       );
     } catch (e: unknown) {
       if (isNodeError(e) && e.code === "ENOENT") {
         return c.text("File not found", 404);
       }
-      console.error("[peek] Failed to render file:", e);
+      logger.error("Failed to render file:", e);
       return c.text("Internal server error", 500);
     }
   });
