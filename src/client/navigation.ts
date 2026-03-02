@@ -1,5 +1,7 @@
 import { logger } from "../utils/logger.ts";
-import { attachTreeToggleHandlers } from "./tree-toggle.ts";
+import { applyBreadcrumb, fetchBreadcrumb } from "./update-breadcrumb.ts";
+import { applyContent, fetchContent } from "./update-content.ts";
+import { applyTree, fetchTree } from "./update-tree.ts";
 
 function getFileNameFromPath(path: string): string {
   const parts = path.split("/");
@@ -13,43 +15,20 @@ async function navigateToFile(path: string, pushState: boolean): Promise<void> {
   currentNavController = new AbortController();
   const { signal } = currentNavController;
 
-  const encodedPath = encodeURIComponent(path);
-  const [contentRes, treeRes, breadcrumbRes] = await Promise.all([
-    fetch(`/api/content?path=${encodedPath}`, { signal }),
-    fetch(`/api/tree-html?currentPath=${encodedPath}`, { signal }),
-    fetch(`/api/breadcrumb-html?path=${encodedPath}`, { signal }),
+  const [contentHtml, treeHtml, breadcrumbHtml] = await Promise.all([
+    fetchContent(path, { signal }),
+    fetchTree(path, { signal }),
+    fetchBreadcrumb(path, { signal }),
   ]);
 
-  if (!contentRes.ok || !treeRes.ok || !breadcrumbRes.ok) {
-    logger.error(
-      `Failed to fetch: content=${contentRes.status}, tree=${treeRes.status}, breadcrumb=${breadcrumbRes.status}`,
-    );
+  if (contentHtml === null || treeHtml === null || breadcrumbHtml === null) {
+    logger.error("Failed to fetch one or more resources during navigation");
     return;
   }
 
-  const [contentHtml, treeHtml, breadcrumbHtml] = await Promise.all([
-    contentRes.text(),
-    treeRes.text(),
-    breadcrumbRes.text(),
-  ]);
-
-  const contentEl = document.getElementById("markdown-content");
-  if (contentEl) {
-    contentEl.innerHTML = contentHtml;
-  }
-
-  const treeEl = document.getElementById("file-tree");
-  if (treeEl) {
-    treeEl.innerHTML = treeHtml;
-    attachTreeToggleHandlers();
-  }
-
-  const breadcrumbNav = document.querySelector(
-    "#header-bar nav[aria-label='Breadcrumb']",
-  );
-  if (breadcrumbNav) {
-    breadcrumbNav.outerHTML = breadcrumbHtml;
-  }
+  applyContent(contentHtml);
+  applyTree(treeHtml);
+  applyBreadcrumb(breadcrumbHtml);
 
   document.title = `${getFileNameFromPath(path)} - peek`;
 

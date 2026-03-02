@@ -1,8 +1,8 @@
 import { ContentCard } from "../components/layout/content-card.js";
-import { Document } from "../renderer/document.js";
 import { PageHeader } from "../components/layout/page-header.js";
 import { FileTree } from "../components/navigation/file-tree.js";
 import type { ResolvedStyles } from "../config/styles.js";
+import { Document } from "../renderer/document.js";
 import type { FileTreeNode } from "../utils/file-tree.js";
 
 type DirectoryListPageProps = {
