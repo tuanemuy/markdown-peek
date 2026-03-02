@@ -1,3 +1,17 @@
+# [1.1.0](https://github.com/tuanemuy/markdown-peek/compare/v1.0.4...v1.1.0) (2026-03-02)
+
+
+### Bug Fixes
+
+* prevent race condition and partial state in initMarkdown ([d9ca2f3](https://github.com/tuanemuy/markdown-peek/commit/d9ca2f356bcc09ab9492ac9d18aac2018a42e188))
+
+
+### Features
+
+* add syntax highlighting with Shiki via markdown-it ([95cd652](https://github.com/tuanemuy/markdown-peek/commit/95cd652ae553588aae32430230db45c2a908c824))
+* expand supported languages to 50 with categorized list ([6f63d3c](https://github.com/tuanemuy/markdown-peek/commit/6f63d3cfc1e0df0f59a7a8a4b5847b3d8bd2aad5))
+* load all bundled languages instead of a fixed subset ([1e880b2](https://github.com/tuanemuy/markdown-peek/commit/1e880b208a3d8e337d3d8b529a518b6e83c76247))
+
 ## [1.0.4](https://github.com/tuanemuy/markdown-peek/compare/v1.0.3...v1.0.4) (2026-03-02)
 
 
