@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/tuanemuy/markdown-peek/compare/v1.0.2...v1.0.3) (2026-03-02)
+
+
+### Bug Fixes
+
+* remove leading ./ from bin path in package.json ([b951c93](https://github.com/tuanemuy/markdown-peek/commit/b951c93dadff39cc51408cc336532e111a264360))
+
 ## [1.0.2](https://github.com/tuanemuy/markdown-peek/compare/v1.0.1...v1.0.2) (2026-03-02)
 
 
