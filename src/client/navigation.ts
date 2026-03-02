@@ -1,6 +1,7 @@
 import { logger } from "../utils/logger.ts";
-import { updateBreadcrumb, updateContent } from "./update-content.ts";
-import { updateTree } from "./update-tree.ts";
+import { applyBreadcrumb, fetchBreadcrumb } from "./update-breadcrumb.ts";
+import { applyContent, fetchContent } from "./update-content.ts";
+import { applyTree, fetchTree } from "./update-tree.ts";
 
 function getFileNameFromPath(path: string): string {
   const parts = path.split("/");
@@ -14,11 +15,20 @@ async function navigateToFile(path: string, pushState: boolean): Promise<void> {
   currentNavController = new AbortController();
   const { signal } = currentNavController;
 
-  await Promise.all([
-    updateContent(path, { signal }),
-    updateTree(path, { signal }),
-    updateBreadcrumb(path, { signal }),
+  const [contentHtml, treeHtml, breadcrumbHtml] = await Promise.all([
+    fetchContent(path, { signal }),
+    fetchTree(path, { signal }),
+    fetchBreadcrumb(path, { signal }),
   ]);
+
+  if (contentHtml === null || treeHtml === null || breadcrumbHtml === null) {
+    logger.error("Failed to fetch one or more resources during navigation");
+    return;
+  }
+
+  applyContent(contentHtml);
+  applyTree(treeHtml);
+  applyBreadcrumb(breadcrumbHtml);
 
   document.title = `${getFileNameFromPath(path)} - peek`;
 

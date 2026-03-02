@@ -31,6 +31,7 @@ function handleFileChangedFile(): void {
 }
 
 function handleFileChangedDirectory(e: MessageEvent): void {
+  if (!document.getElementById("markdown-content")) return;
   const parsed = parseFileChangedData(e.data);
   if (!parsed) return;
   const params = new URLSearchParams(window.location.search);
