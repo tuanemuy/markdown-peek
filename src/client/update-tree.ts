@@ -1,25 +1,15 @@
-import { logger } from "../utils/logger.ts";
+import { fetchHtml } from "./fetch-html.ts";
 import { attachTreeToggleHandlers } from "./tree-toggle.ts";
 
-export async function fetchTree(
+export function fetchTree(
   currentPath: string,
   options?: { readonly signal?: AbortSignal },
 ): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `/api/tree-html?currentPath=${encodeURIComponent(currentPath)}`,
-      { signal: options?.signal },
-    );
-    if (!res.ok) {
-      logger.error(`Failed to fetch tree: HTTP ${res.status}`);
-      return null;
-    }
-    return await res.text();
-  } catch (e: unknown) {
-    if (e instanceof DOMException && e.name === "AbortError") throw e;
-    logger.error("Failed to fetch tree:", e);
-    return null;
-  }
+  return fetchHtml(
+    `/api/tree-html?currentPath=${encodeURIComponent(currentPath)}`,
+    "tree",
+    options,
+  );
 }
 
 export function applyTree(html: string): void {
