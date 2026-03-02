@@ -42,11 +42,11 @@ describe("renderMarkdown", () => {
     expect(html).toContain("first");
   });
 
-  it("renders code blocks", () => {
+  it("renders code blocks with syntax highlighting", () => {
     const html = renderMarkdown("```js\nconsole.log('hi');\n```");
-    expect(html).toContain("<pre>");
-    expect(html).toContain("<code");
-    expect(html).toContain("console.log");
+    expect(html).toContain("<pre");
+    expect(html).toContain("shiki");
+    expect(html).toContain("console");
   });
 
   it("renders inline code", () => {
@@ -78,7 +78,7 @@ describe("renderMarkdown", () => {
 
   it("renders strikethrough", () => {
     const html = renderMarkdown("~~deleted~~");
-    expect(html).toContain("<del>");
+    expect(html).toContain("<s>");
     expect(html).toContain("deleted");
   });
 
