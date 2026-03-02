@@ -1,9 +1,10 @@
-import { Document } from "../components/layout/document.js";
+import { Document } from "../renderer/document.js";
 import { MainContent } from "../components/layout/main-content.js";
 import { MarkdownContent } from "../components/layout/markdown-content.js";
 import { PageHeader } from "../components/layout/page-header.js";
 import { Sidebar } from "../components/navigation/sidebar.js";
 import type { ResolvedStyles } from "../config/styles.js";
+
 import type { FileTreeNode } from "../utils/file-tree.js";
 
 type DirectoryViewPageProps = {
@@ -24,19 +25,14 @@ export function DirectoryViewPage({
   styles,
 }: DirectoryViewPageProps) {
   return (
-    <Document
-      title={fileTitle}
-      styles={styles}
-      mode="directory"
-      dirTitle={dirTitle}
-    >
+    <Document title={fileTitle} styles={styles} mode="directory">
       <Sidebar title={dirTitle} tree={tree} currentPath={currentPath} />
 
       <PageHeader
         id="header-bar"
         breadcrumbs={[{ label: dirTitle, href: "/" }, { label: fileTitle }]}
         showSidebarToggle
-        externalLinkHref={currentPath}
+        externalLinkHref={`/view?path=${encodeURIComponent(currentPath)}`}
       />
 
       <MainContent class="px-5 sm:px-10 py-5 sm:py-10">

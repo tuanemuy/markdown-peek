@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
 import { createSseManager } from "./sse.js";
 
 describe("SSE manager", () => {
@@ -9,36 +10,69 @@ describe("SSE manager", () => {
     expect(res.headers.get("content-type")).toContain("text/event-stream");
   });
 
-  it("tracks connected clients", () => {
+  it("starts with zero clients", () => {
     const sse = createSseManager();
-    expect(sse.clients.size).toBe(0);
+    expect(sse.clientCount).toBe(0);
   });
 
-  it("closeAll clears all clients", () => {
+  it("closeAll does not throw with no clients", () => {
     const sse = createSseManager();
-    const mockClient = {
-      send: () => {},
-      close: () => {},
-    };
-    sse.clients.add(mockClient);
-    expect(sse.clients.size).toBe(1);
+    expect(() => sse.closeAll()).not.toThrow();
+  });
+
+  it("broadcast does not throw with no clients", () => {
+    const sse = createSseManager();
+    expect(() =>
+      sse.broadcast("file-changed", '{"path":"test.md"}'),
+    ).not.toThrow();
+  });
+});
+
+describe("SSE connection lifecycle", () => {
+  let sse: ReturnType<typeof createSseManager>;
+
+  afterEach(() => {
     sse.closeAll();
-    expect(sse.clients.size).toBe(0);
   });
 
-  it("broadcast calls send on all clients", () => {
-    const sse = createSseManager();
-    const sent: { event: string; data: string }[] = [];
-    const mockClient = {
-      send: (event: string, data: string) => {
-        sent.push({ event, data });
-      },
-      close: () => {},
-    };
-    sse.clients.add(mockClient);
+  it("clientCount increases when a client connects", async () => {
+    sse = createSseManager();
+    expect(sse.clientCount).toBe(0);
+
+    // Initiate SSE connection (non-blocking — response is a stream)
+    sse.app.request("/sse");
+    // Allow microtask queue to flush so the stream handler registers the client
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(sse.clientCount).toBe(1);
+  });
+
+  it("broadcast sends data to connected clients", async () => {
+    sse = createSseManager();
+    const res = await sse.app.request("/sse");
+
+    // Allow the stream handler to register
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     sse.broadcast("file-changed", '{"path":"test.md"}');
-    expect(sent).toEqual([
-      { event: "file-changed", data: '{"path":"test.md"}' },
-    ]);
+
+    // Read partial body — the SSE stream should contain the broadcast event
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("No reader");
+
+    const { value } = await reader.read();
+    const text = new TextDecoder().decode(value);
+    expect(text).toContain("file-changed");
+    reader.cancel();
+  });
+
+  it("closeAll resets clientCount to zero", async () => {
+    sse = createSseManager();
+    sse.app.request("/sse");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(sse.clientCount).toBeGreaterThan(0);
+    sse.closeAll();
+    expect(sse.clientCount).toBe(0);
   });
 });

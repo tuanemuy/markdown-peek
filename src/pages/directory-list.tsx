@@ -1,5 +1,5 @@
 import { ContentCard } from "../components/layout/content-card.js";
-import { Document } from "../components/layout/document.js";
+import { Document } from "../renderer/document.js";
 import { PageHeader } from "../components/layout/page-header.js";
 import { FileTree } from "../components/navigation/file-tree.js";
 import type { ResolvedStyles } from "../config/styles.js";
@@ -17,8 +17,8 @@ export function DirectoryListPage({
   styles,
 }: DirectoryListPageProps) {
   return (
-    <Document title={title} styles={styles} mode="directory" dirTitle={title}>
-      <PageHeader breadcrumbs={[{ label: title }]} externalLinkHref="/" />
+    <Document title={title} styles={styles} mode="directory">
+      <PageHeader breadcrumbs={[{ label: title }]} />
       <main class="p-2 sm:p-5 sm:py-0 md:pt-5 space-y-5">
         <ContentCard>
           <nav>

@@ -86,13 +86,15 @@ function initSidebarResize(): void {
 
   handle.addEventListener("pointerdown", (e: PointerEvent) => {
     e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
     const sidebar = document.getElementById("sidebar");
     document.body.style.setProperty("user-select", "none");
     sidebar?.style.setProperty("transition", "none");
 
     function onPointerUp(e: PointerEvent): void {
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
+      handle.releasePointerCapture(e.pointerId);
+      handle.removeEventListener("pointermove", onPointerMove);
+      handle.removeEventListener("pointerup", onPointerUp);
       document.body.style.removeProperty("user-select");
       sidebar?.style.removeProperty("transition");
 
@@ -100,8 +102,8 @@ function initSidebarResize(): void {
       localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
     }
 
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
+    handle.addEventListener("pointermove", onPointerMove);
+    handle.addEventListener("pointerup", onPointerUp);
   });
 }
 
@@ -133,7 +135,7 @@ export function initSidebar(): void {
 
       openSidebar();
 
-      // Force reflow then re-enable transitions
+      // Force reflow to flush style changes so transitions are disabled during initial state
       void document.body.offsetHeight;
       if (sidebar) sidebar.style.removeProperty("transition");
       if (header) header.style.removeProperty("transition");
@@ -143,18 +145,23 @@ export function initSidebar(): void {
 
   // Sync overlay state when crossing the desktop/mobile breakpoint
   let wasDesktop = isDesktop();
+  let resizeRafId = 0;
   window.addEventListener("resize", () => {
-    const nowDesktop = isDesktop();
-    if (wasDesktop === nowDesktop) return;
-    wasDesktop = nowDesktop;
+    if (resizeRafId) return;
+    resizeRafId = requestAnimationFrame(() => {
+      resizeRafId = 0;
+      const nowDesktop = isDesktop();
+      if (wasDesktop === nowDesktop) return;
+      wasDesktop = nowDesktop;
 
-    const resizeOverlay = document.getElementById("sidebar-overlay");
-    if (!isSidebarOpen()) return;
+      const resizeOverlay = document.getElementById("sidebar-overlay");
+      if (!isSidebarOpen()) return;
 
-    if (nowDesktop) {
-      resizeOverlay?.classList.add("hidden");
-    } else {
-      resizeOverlay?.classList.remove("hidden");
-    }
+      if (nowDesktop) {
+        resizeOverlay?.classList.add("hidden");
+      } else {
+        resizeOverlay?.classList.remove("hidden");
+      }
+    });
   });
 }

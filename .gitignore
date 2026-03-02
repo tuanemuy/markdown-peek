@@ -1,7 +1,8 @@
 node_modules
 coverage
 dist
-src/generated/
+src/renderer/global.css
+src/renderer/client-bundle.js
 
 .direnv
 .env

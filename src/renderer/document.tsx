@@ -1,7 +1,8 @@
 import { raw } from "hono/html";
 import type { Child } from "hono/jsx";
-import type { ResolvedStyles } from "../../config/styles.js";
-import { clientBundle } from "../../generated/client-bundle.js";
+import type { ResolvedStyles } from "../config/styles.js";
+import globalCss from "./global.css";
+import { clientBundle } from "./client-bundle.js";
 
 const themeInitScript = `(function(){var t=localStorage.getItem("theme");if(t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")})()`;
 
@@ -9,17 +10,10 @@ type DocumentProps = {
   readonly title: string;
   readonly styles: ResolvedStyles;
   readonly mode: "file" | "directory";
-  readonly dirTitle?: string;
   readonly children: Child;
 };
 
-export function Document({
-  title,
-  styles,
-  mode,
-  dirTitle,
-  children,
-}: DocumentProps) {
+export function Document({ title, styles, mode, children }: DocumentProps) {
   return (
     <>
       {raw("<!DOCTYPE html>")}
@@ -32,13 +26,14 @@ export function Document({
           />
           <title>{title} - peek</title>
           <script>{raw(themeInitScript)}</script>
-          <style>{raw(styles.tailwindCss)}</style>
-          <style>{raw(styles.contentCss)}</style>
+          <style>{raw(globalCss)}</style>
+          <style>
+            {raw(styles.contentCss.replaceAll("</style", "<\\/style"))}
+          </style>
         </head>
         <body
           class="bg-background text-foreground min-h-screen"
           data-mode={mode}
-          data-dir-title={dirTitle}
         >
           {children}
           <script>{raw(clientBundle)}</script>

@@ -1,7 +1,4 @@
-import {
-  BREADCRUMB_CLASSES,
-  SLASH_ICON_HTML,
-} from "../shared/breadcrumb-styles.ts";
+import { logger } from "../utils/logger.ts";
 import { attachTreeToggleHandlers } from "./tree-toggle.ts";
 
 function getFileNameFromPath(path: string): string {
@@ -9,17 +6,31 @@ function getFileNameFromPath(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+let currentNavController: AbortController | null = null;
+
 async function navigateToFile(path: string, pushState: boolean): Promise<void> {
-  const [contentRes, treeRes] = await Promise.all([
-    fetch(`/api/content?path=${encodeURIComponent(path)}`),
-    fetch(`/api/tree-html?currentPath=${encodeURIComponent(path)}`),
+  if (currentNavController) currentNavController.abort();
+  currentNavController = new AbortController();
+  const { signal } = currentNavController;
+
+  const encodedPath = encodeURIComponent(path);
+  const [contentRes, treeRes, breadcrumbRes] = await Promise.all([
+    fetch(`/api/content?path=${encodedPath}`, { signal }),
+    fetch(`/api/tree-html?currentPath=${encodedPath}`, { signal }),
+    fetch(`/api/breadcrumb-html?path=${encodedPath}`, { signal }),
   ]);
 
-  if (!contentRes.ok || !treeRes.ok) return;
+  if (!contentRes.ok || !treeRes.ok || !breadcrumbRes.ok) {
+    logger.error(
+      `Failed to fetch: content=${contentRes.status}, tree=${treeRes.status}, breadcrumb=${breadcrumbRes.status}`,
+    );
+    return;
+  }
 
-  const [contentHtml, treeHtml] = await Promise.all([
+  const [contentHtml, treeHtml, breadcrumbHtml] = await Promise.all([
     contentRes.text(),
     treeRes.text(),
+    breadcrumbRes.text(),
   ]);
 
   const contentEl = document.getElementById("markdown-content");
@@ -37,29 +48,7 @@ async function navigateToFile(path: string, pushState: boolean): Promise<void> {
     "#header-bar nav[aria-label='Breadcrumb']",
   );
   if (breadcrumbNav) {
-    const ol = breadcrumbNav.querySelector("ol");
-    if (ol) {
-      const dirTitle = document.body.dataset.dirTitle ?? "";
-      const fileName = getFileNameFromPath(path);
-
-      ol.textContent = "";
-
-      const dirLi = document.createElement("li");
-      dirLi.className = BREADCRUMB_CLASSES.dirItem;
-      const dirLink = document.createElement("a");
-      dirLink.className = BREADCRUMB_CLASSES.dirLink;
-      dirLink.href = "/";
-      dirLink.textContent = dirTitle;
-      dirLi.appendChild(dirLink);
-      dirLi.insertAdjacentHTML("beforeend", SLASH_ICON_HTML);
-      ol.appendChild(dirLi);
-
-      const fileLi = document.createElement("li");
-      fileLi.className = BREADCRUMB_CLASSES.fileItem;
-      fileLi.setAttribute("aria-current", "page");
-      fileLi.textContent = fileName;
-      ol.appendChild(fileLi);
-    }
+    breadcrumbNav.outerHTML = breadcrumbHtml;
   }
 
   document.title = `${getFileNameFromPath(path)} - peek`;
@@ -98,16 +87,19 @@ export function initNavigation(): void {
     if (!path) return;
 
     e.preventDefault();
-    navigateToFile(path, true).catch((e: unknown) =>
-      console.error("[peek] Failed to navigate:", e),
-    );
+    navigateToFile(path, true).catch((e: unknown) => {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      logger.error("Failed to navigate:", e);
+    });
   });
 
   window.addEventListener("popstate", (e: PopStateEvent) => {
     const state = e.state as { path?: string } | null;
-    if (state?.path) {
-      navigateToFile(state.path, false).catch((e: unknown) =>
-        console.error("[peek] Failed to navigate:", e),
+    const path =
+      state?.path ?? new URLSearchParams(window.location.search).get("path");
+    if (path) {
+      navigateToFile(path, false).catch((e: unknown) =>
+        logger.error("Failed to navigate:", e),
       );
     } else {
       window.location.reload();

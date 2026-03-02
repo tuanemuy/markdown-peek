@@ -1,5 +1,7 @@
-import { Document } from "../components/layout/document.js";
+import { Document } from "../renderer/document.js";
+import { MainContent } from "../components/layout/main-content.js";
 import { MarkdownContent } from "../components/layout/markdown-content.js";
+import { PageHeader } from "../components/layout/page-header.js";
 import type { ResolvedStyles } from "../config/styles.js";
 
 type FilePreviewPageProps = {
@@ -15,11 +17,13 @@ export function FilePreviewPage({
 }: FilePreviewPageProps) {
   return (
     <Document title={title} styles={styles} mode="file">
-      <main class="px-2 sm:px-5 py-5 sm:py-15">
+      <PageHeader breadcrumbs={[{ label: title }]} />
+
+      <MainContent class="px-2 sm:px-5 py-5 sm:py-15">
         <div class="max-w-4xl mx-auto">
           <MarkdownContent htmlContent={htmlContent} />
         </div>
-      </main>
+      </MainContent>
     </Document>
   );
 }

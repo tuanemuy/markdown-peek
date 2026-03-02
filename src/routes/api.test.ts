@@ -124,3 +124,90 @@ describe("api routes - directory mode", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("api routes - file mode edge cases", () => {
+  it("GET /api/content returns 500 when file does not exist", async () => {
+    const app = createApiRoutes({
+      mode: "file",
+      targetPath: join(testDir, "nonexistent.md"),
+    });
+    const res = await app.request("/api/content");
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(text).toBe("Failed to read file");
+  });
+
+  it("GET /api/tree-html returns 200 with empty body in file mode", async () => {
+    const app = createApiRoutes({ mode: "file", targetPath: testFile });
+    const res = await app.request("/api/tree-html");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toBe("");
+  });
+});
+
+describe("api routes - tree error handling", () => {
+  const failingTreeCache = {
+    get: () => Promise.reject(new Error("disk failure")),
+    invalidate: () => {},
+  };
+
+  it("GET /api/tree returns 500 when treeCache fails", async () => {
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache: failingTreeCache,
+    });
+    const res = await app.request("/api/tree");
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(text).toBe("Failed to read directory");
+  });
+
+  it("GET /api/tree-html returns 500 when treeCache fails", async () => {
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache: failingTreeCache,
+    });
+    const res = await app.request("/api/tree-html");
+    expect(res.status).toBe(500);
+    const text = await res.text();
+    expect(text).toBe("Failed to read directory");
+  });
+});
+
+describe("api routes - directory mode edge cases", () => {
+  it("GET /api/content with non-.md extension returns 404", async () => {
+    const treeCache = createFileTreeCache(testDir);
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache,
+    });
+    const res = await app.request("/api/content?path=readme.txt");
+    expect(res.status).toBe(404);
+  });
+
+  it("GET /api/content with ../etc/passwd path traversal returns 403", async () => {
+    const treeCache = createFileTreeCache(testDir);
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache,
+    });
+    const res = await app.request("/api/content?path=../etc/passwd");
+    expect(res.status).toBe(403);
+  });
+
+  it("GET /api/content with ./../../etc/passwd path traversal returns 403", async () => {
+    const treeCache = createFileTreeCache(testDir);
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache,
+    });
+    const res = await app.request("/api/content?path=./../../etc/passwd");
+    expect(res.status).toBe(403);
+  });
+});

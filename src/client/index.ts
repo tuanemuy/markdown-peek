@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { initNavigation } from "./navigation.ts";
 import { initSidebar } from "./sidebar.ts";
 import { initSse } from "./sse.ts";
@@ -6,7 +7,7 @@ import { attachTreeToggleHandlers } from "./tree-toggle.ts";
 
 const rawMode = document.body.dataset.mode;
 if (rawMode !== "file" && rawMode !== "directory") {
-  console.warn(`[peek] Unknown data-mode "${rawMode}", falling back to "file"`);
+  logger.warn(`Unknown data-mode "${rawMode}", falling back to "file"`);
 }
 const mode: "file" | "directory" =
   rawMode === "file" || rawMode === "directory" ? rawMode : "file";

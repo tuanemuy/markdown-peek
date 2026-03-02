@@ -7,33 +7,28 @@ import { createDirectoryRoutes } from "./routes/directory.js";
 import { createFileRoutes } from "./routes/file.js";
 import type { SseManager } from "./routes/sse.js";
 import { createSseManager } from "./routes/sse.js";
+
 import type { FileTreeCache } from "./utils/file-tree-cache.js";
 import { createFileTreeCache } from "./utils/file-tree-cache.js";
 import type { FileWatcherHandle } from "./watcher/index.js";
 import { createFileWatcher } from "./watcher/index.js";
 
-type FileServerConfig = {
-  readonly mode: "file";
+type BaseServerConfig = {
   readonly targetPath: string;
   readonly port: number;
   readonly hostname: string;
   readonly styles: ResolvedStyles;
 };
 
-type DirectoryServerConfig = {
-  readonly mode: "directory";
-  readonly targetPath: string;
-  readonly port: number;
-  readonly hostname: string;
-  readonly styles: ResolvedStyles;
-};
-
-export type ServerConfig = FileServerConfig | DirectoryServerConfig;
+export type ServerConfig =
+  | (BaseServerConfig & { readonly mode: "file" })
+  | (BaseServerConfig & { readonly mode: "directory" });
 
 export type ServerInstance = {
-  readonly close: () => void;
+  readonly close: () => Promise<void>;
   readonly watcher: FileWatcherHandle;
   readonly sseCloseAll: () => void;
+  readonly shutdown: () => Promise<void>;
 };
 
 type AppContext =
@@ -134,6 +129,7 @@ export async function startServer(
     };
     const onError = (err: Error) => {
       server.removeListener("listening", onListening);
+      sse.closeAll();
       watcher.close();
       reject(err);
     };
@@ -141,11 +137,20 @@ export async function startServer(
     server.once("error", onError);
   });
 
+  const close = () =>
+    new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+  const sseCloseAll = () => sse.closeAll();
+
   return {
-    close: () => {
-      server.close();
-    },
+    close,
     watcher,
-    sseCloseAll: () => sse.closeAll(),
+    sseCloseAll,
+    async shutdown() {
+      sseCloseAll();
+      watcher.close();
+      await close();
+    },
   };
 }

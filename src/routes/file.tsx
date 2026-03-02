@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import type { ResolvedStyles } from "../config/styles.js";
 import { renderMarkdown } from "../markdown/renderer.js";
 import { FilePreviewPage } from "../pages/index.js";
+import { logger } from "../utils/logger.js";
 
 export function createFileRoutes(
   filePath: string,
@@ -19,7 +20,8 @@ export function createFileRoutes(
       return c.html(
         <FilePreviewPage title={title} htmlContent={html} styles={styles} />,
       );
-    } catch {
+    } catch (e: unknown) {
+      logger.error("Failed to read file:", e);
       return c.text("Failed to read file", 500);
     }
   });
