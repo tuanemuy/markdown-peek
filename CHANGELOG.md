@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/tuanemuy/markdown-peek/compare/v1.1.1...v1.1.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* move shebang banner to outputOptions for tsdown compatibility ([60650bf](https://github.com/tuanemuy/markdown-peek/commit/60650bfb0e4da009b530448ec87c1db49fbb11af))
+
 # [1.1.0](https://github.com/tuanemuy/markdown-peek/compare/v1.0.4...v1.1.0) (2026-03-02)
 
 
