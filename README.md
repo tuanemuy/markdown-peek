@@ -6,6 +6,7 @@ Markdown preview CLI with live reload. Spins up a local web server and renders M
 
 - **Live reload** - Automatically refreshes the browser when you save a file
 - **Directory browsing** - Specify a directory to browse and preview Markdown files from a file tree
+- **Syntax highlighting** - Code blocks are highlighted with Shiki
 - **Custom CSS** - Customize styles via `--css` flag or `~/.config/peek/style.css`
 - **Dark / Light theme** - Built-in theme toggle
 
@@ -16,7 +17,7 @@ Markdown preview CLI with live reload. Spins up a local web server and renders M
 ## Install
 
 ```bash
-npm install -g @maku/peek
+npm install -g markdown-peek
 ```
 
 ## Usage
@@ -63,37 +64,6 @@ Custom CSS only affects the `.markdown-body` content area, not the layout chrome
 
 You can override design tokens (CSS custom properties) for full theme customization. See [`docs/design-token-example.css`](docs/design-token-example.css) for reference.
 
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start dev server
-pnpm dev
-
-# Run tests
-pnpm test
-
-# Lint and format
-pnpm lint:fix
-pnpm format
-
-# Type check
-pnpm typecheck
-
-# Build for production
-pnpm build
-```
-
-## Tech Stack
-
-- [Hono](https://hono.dev/) - Web framework (routing, JSX SSR)
-- [md4w](https://github.com/nicolo-ribaudo/md4w) - WASM-based Markdown renderer
-- [gunshi](https://github.com/poppinss/gunshi) - CLI framework
-- [TailwindCSS v4](https://tailwindcss.com/) - Styling
-- [@clack/prompts](https://github.com/bombshell-dev/clack) - Terminal UI
-
 ## License
 
-ISC
+MIT
