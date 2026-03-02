@@ -23,7 +23,9 @@ export function createFileTreeCache(rootDir: string): FileTreeCache {
       if (pending) return pending;
       const currentPending = buildFileTree(rootDir).then((result) => {
         if (pending === currentPending) {
-          cached = result;
+          if (result.ok) {
+            cached = result;
+          }
           pending = null;
         }
         return result;

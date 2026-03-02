@@ -2,8 +2,9 @@ import type { Dirent } from "node:fs";
 import { readdir, readFile, realpath } from "node:fs/promises";
 import { join, relative } from "node:path";
 import ignore, { type Ignore } from "ignore";
+import { toError } from "../types/error.js";
 import type { Result } from "../types/result.js";
-import { err, ok, safe } from "../types/result.js";
+import { err, ok } from "../types/result.js";
 import { isNodeError } from "./error.js";
 import { logger } from "./logger.js";
 
@@ -31,22 +32,17 @@ type IgnoreRule = {
 };
 
 async function readGitignore(path: string): Promise<Ignore | null> {
-  const result = await safe(
-    () => readFile(path, "utf-8"),
-    (e) => e,
-  );
-
-  if (result.ok) {
+  try {
+    const content = await readFile(path, "utf-8");
     const ig = ignore();
-    ig.add(result.value);
+    ig.add(content);
     return ig;
+  } catch (e) {
+    if (!(isNodeError(e) && e.code === "ENOENT")) {
+      logger.warn(`Failed to read .gitignore at ${path}:`, e);
+    }
+    return null;
   }
-
-  if (!(isNodeError(result.error) && result.error.code === "ENOENT")) {
-    logger.warn(`Failed to read .gitignore at ${path}:`, result.error);
-  }
-
-  return null;
 }
 
 function tryLoadGitignoreFromEntries(
@@ -84,7 +80,7 @@ function isPathIgnored(
 
 export type BuildTreeError = {
   readonly type: "build-tree-error";
-  readonly cause: unknown;
+  readonly cause: Error;
 };
 
 export async function buildFileTree(
@@ -117,7 +113,7 @@ export async function buildFileTree(
     );
     return ok(nodes);
   } catch (e) {
-    return err({ type: "build-tree-error" as const, cause: e });
+    return err({ type: "build-tree-error" as const, cause: toError(e) });
   }
 }
 

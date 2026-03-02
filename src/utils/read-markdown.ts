@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { toError } from "../types/error.js";
 import type { Result } from "../types/result.js";
 import { safe } from "../types/result.js";
 import { isNodeError } from "./error.js";
@@ -11,7 +12,7 @@ type FileNotFoundError = {
 type FileReadError = {
   readonly type: "read-error";
   readonly path: string;
-  readonly cause: unknown;
+  readonly cause: Error;
 };
 
 export type ReadFileError = FileNotFoundError | FileReadError;
@@ -24,6 +25,6 @@ export function readMarkdownFile(
     (e): ReadFileError =>
       isNodeError(e) && e.code === "ENOENT"
         ? { type: "file-not-found", path }
-        : { type: "read-error", path, cause: e },
+        : { type: "read-error", path, cause: toError(e) },
   );
 }

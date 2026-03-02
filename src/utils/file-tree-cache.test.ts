@@ -61,11 +61,12 @@ describe("createFileTreeCache", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("allows get() again after a previous failure", async () => {
+  it("retries after a previous failure instead of caching error", async () => {
     const cache = createFileTreeCache("/nonexistent/path");
     const first = await cache.get();
     expect(first.ok).toBe(false);
     const second = await cache.get();
     expect(second.ok).toBe(false);
+    expect(first).not.toBe(second);
   });
 });

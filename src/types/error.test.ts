@@ -1,0 +1,60 @@
+import { describe, expect, it } from "vitest";
+import { type AnyError, anyError, toError } from "./error.js";
+
+describe("toError", () => {
+  it("returns the same Error instance when given an Error", () => {
+    const original = new Error("test");
+    expect(toError(original)).toBe(original);
+  });
+
+  it("preserves Error subclasses", () => {
+    const original = new TypeError("bad type");
+    const result = toError(original);
+    expect(result).toBe(original);
+    expect(result).toBeInstanceOf(TypeError);
+  });
+
+  it("wraps a string into an Error", () => {
+    const result = toError("something went wrong");
+    expect(result).toBeInstanceOf(Error);
+    expect(result.message).toBe("something went wrong");
+  });
+
+  it("wraps a number into an Error via String()", () => {
+    const result = toError(42);
+    expect(result).toBeInstanceOf(Error);
+    expect(result.message).toBe("42");
+  });
+
+  it("wraps null into an Error", () => {
+    const result = toError(null);
+    expect(result).toBeInstanceOf(Error);
+    expect(result.message).toBe("null");
+  });
+
+  it("wraps undefined into an Error", () => {
+    const result = toError(undefined);
+    expect(result).toBeInstanceOf(Error);
+    expect(result.message).toBe("undefined");
+  });
+});
+
+describe("anyError", () => {
+  it("returns an AnyError with the correct type discriminant", () => {
+    const cause = new Error("root cause");
+    const result: AnyError = anyError("context message", cause);
+    expect(result.type).toBe("any-error");
+  });
+
+  it("preserves the message", () => {
+    const cause = new Error("root cause");
+    const result = anyError("Failed to do X", cause);
+    expect(result.message).toBe("Failed to do X");
+  });
+
+  it("preserves the cause", () => {
+    const cause = new Error("root cause");
+    const result = anyError("context", cause);
+    expect(result.cause).toBe(cause);
+  });
+});

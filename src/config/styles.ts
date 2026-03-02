@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, resolve } from "node:path";
 import contentCssDefault from "../styles/content.css";
+import { toError } from "../types/error.js";
 import type { Result } from "../types/result.js";
 import { map, ok, safe } from "../types/result.js";
 import { isNodeError } from "../utils/error.js";
@@ -18,7 +19,7 @@ type FileNotFoundError = {
 type ReadError = {
   readonly type: "read-error";
   readonly path: string;
-  readonly cause: unknown;
+  readonly cause: Error;
 };
 
 export type StylesError = FileNotFoundError | ReadError;
@@ -39,7 +40,7 @@ async function tryReadCss(
     (e): StylesError =>
       isNodeError(e) && e.code === "ENOENT"
         ? { type: "file-not-found", path: cssPath }
-        : { type: "read-error", path: cssPath, cause: e },
+        : { type: "read-error", path: cssPath, cause: toError(e) },
   );
 }
 
