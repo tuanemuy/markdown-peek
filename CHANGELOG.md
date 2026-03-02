@@ -1,3 +1,12 @@
+## [1.0.4](https://github.com/tuanemuy/markdown-peek/compare/v1.0.3...v1.0.4) (2026-03-02)
+
+
+### Bug Fixes
+
+* change CI trigger from push to pull_request on main ([a4cebe1](https://github.com/tuanemuy/markdown-peek/commit/a4cebe1b875f85c73694598e3b9fcebc6a310653))
+* change release workflow trigger from workflow_run to push ([03333d6](https://github.com/tuanemuy/markdown-peek/commit/03333d66596b889d71a3d04f4878b862745b63ba))
+* remove stale workflow_run condition from release workflow ([fd8baaf](https://github.com/tuanemuy/markdown-peek/commit/fd8baaf189ad28798a6e6182fdc7e9f520cddeb5))
+
 ## [1.0.3](https://github.com/tuanemuy/markdown-peek/compare/v1.0.2...v1.0.3) (2026-03-02)
 
 
