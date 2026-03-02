@@ -205,5 +205,4 @@ describe("directory routes - security", () => {
     const res = await app.request("/view?path=docs");
     expect(res.status).toBe(404);
   });
-
 });

@@ -39,7 +39,10 @@ describe("file routes - edge cases", () => {
   it("returns 500 for non-existent file", async () => {
     const result = await resolveStyles();
     if (!result.ok) throw new Error("Failed to resolve styles");
-    const app = createFileRoutes(join(testDir, "non-existent.md"), result.value);
+    const app = createFileRoutes(
+      join(testDir, "non-existent.md"),
+      result.value,
+    );
 
     const res = await app.request("/");
     expect(res.status).toBe(500);

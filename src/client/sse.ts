@@ -1,5 +1,6 @@
 import { logger } from "../utils/logger.ts";
-import { attachTreeToggleHandlers } from "./tree-toggle.ts";
+import { updateContent } from "./update-content.ts";
+import { updateTree } from "./update-tree.ts";
 
 const SSE_MAX_RETRIES = 10;
 const SSE_INITIAL_RETRY_MS = 1000;
@@ -24,22 +25,12 @@ function parseFileChangedData(raw: string): { path: string } | null {
 }
 
 function handleFileChangedFile(): void {
-  const contentEl = document.getElementById("markdown-content");
-  if (!contentEl) return;
-  fetch("/api/content")
-    .then((res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.text();
-    })
-    .then((html) => {
-      contentEl.innerHTML = html;
-    })
-    .catch((e: unknown) => logger.error("Failed to fetch content:", e));
+  updateContent(undefined).catch((e: unknown) =>
+    logger.error("Failed to update content:", e),
+  );
 }
 
 function handleFileChangedDirectory(e: MessageEvent): void {
-  const contentEl = document.getElementById("markdown-content");
-  if (!contentEl) return;
   const parsed = parseFileChangedData(e.data);
   if (!parsed) return;
   const params = new URLSearchParams(window.location.search);
@@ -48,34 +39,18 @@ function handleFileChangedDirectory(e: MessageEvent): void {
     currentPath &&
     normalizePath(parsed.path) === normalizePath(currentPath)
   ) {
-    fetch(`/api/content?path=${encodeURIComponent(currentPath)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
-      })
-      .then((html) => {
-        contentEl.innerHTML = html;
-      })
-      .catch((e: unknown) => logger.error("Failed to fetch content:", e));
+    updateContent(currentPath).catch((e: unknown) =>
+      logger.error("Failed to update content:", e),
+    );
   }
 }
 
 function handleTreeChanged(): void {
-  const treeCurrentPath =
+  const currentPath =
     new URLSearchParams(window.location.search).get("path") || "";
-  fetch(`/api/tree-html?currentPath=${encodeURIComponent(treeCurrentPath)}`)
-    .then((res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.text();
-    })
-    .then((html) => {
-      const treeEl = document.getElementById("file-tree");
-      if (treeEl) {
-        treeEl.innerHTML = html;
-        attachTreeToggleHandlers();
-      }
-    })
-    .catch((e: unknown) => logger.error("Failed to fetch tree:", e));
+  updateTree(currentPath).catch((e: unknown) =>
+    logger.error("Failed to update tree:", e),
+  );
 }
 
 type SseEventHandlers = {
