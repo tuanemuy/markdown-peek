@@ -4,6 +4,7 @@ import MarkdownIt from "markdown-it";
 import taskLists from "markdown-it-task-lists";
 
 let md: MarkdownIt | null = null;
+let initPromise: Promise<void> | null = null;
 
 const supportedLangs = [
   "javascript",
@@ -35,20 +36,28 @@ const supportedLangs = [
   "tsx",
 ] as const;
 
-export async function initMarkdown(): Promise<void> {
-  if (md) return;
-  md = MarkdownIt();
-  md.use(taskLists);
-  md.use(
-    await Shiki({
-      themes: {
-        light: "gruvbox-light-hard",
-        dark: "gruvbox-dark-hard",
-      },
-      defaultColor: false,
-      langs: [...supportedLangs],
-    }),
-  );
+export function initMarkdown(): Promise<void> {
+  if (!initPromise) {
+    initPromise = (async () => {
+      const instance = MarkdownIt();
+      instance.use(taskLists);
+      instance.use(
+        await Shiki({
+          themes: {
+            light: "gruvbox-light-hard",
+            dark: "gruvbox-dark-hard",
+          },
+          defaultColor: false,
+          langs: [...supportedLangs],
+        }),
+      );
+      md = instance;
+    })().catch((e: unknown) => {
+      initPromise = null;
+      throw e;
+    });
+  }
+  return initPromise;
 }
 
 export function renderMarkdown(content: string): string {
