@@ -24,13 +24,43 @@ describe("isWithinBase", () => {
     ).toBe(false);
   });
 
-  it("returns false for the base path itself", () => {
-    expect(isWithinBase("/home/user/docs", "/home/user/docs")).toBe(false);
+  it("returns true for the base path itself", () => {
+    expect(isWithinBase("/home/user/docs", "/home/user/docs")).toBe(true);
   });
 
   it("returns false for a sibling path with common prefix", () => {
     expect(isWithinBase("/home/user/docs", "/home/user/docs-backup/f.md")).toBe(
       false,
     );
+  });
+
+  it("returns false for single .. traversal", () => {
+    expect(isWithinBase("/home/user/docs", "/home/user/docs/..")).toBe(false);
+  });
+
+  it("returns false for ./../../ traversal", () => {
+    expect(
+      isWithinBase("/home/user/docs", "/home/user/docs/./../../etc/passwd"),
+    ).toBe(false);
+  });
+
+  it("returns false for double traversal", () => {
+    expect(
+      isWithinBase("/home/user/docs", "/home/user/docs/../../etc/passwd"),
+    ).toBe(false);
+  });
+
+  it("returns true with trailing slash on base", () => {
+    expect(isWithinBase("/home/user/docs/", "/home/user/docs/file.md")).toBe(
+      true,
+    );
+  });
+
+  it("returns true with trailing slash on target", () => {
+    expect(isWithinBase("/home/user/docs", "/home/user/docs/sub/")).toBe(true);
+  });
+
+  it("returns true for path within root", () => {
+    expect(isWithinBase("/", "/etc/passwd")).toBe(true);
   });
 });
