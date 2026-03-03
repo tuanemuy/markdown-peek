@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/tuanemuy/markdown-peek/compare/v1.4.0...v1.5.0) (2026-03-03)
+
+
+### Bug Fixes
+
+* address review findings and extract navigation/SSE hooks ([dff0e77](https://github.com/tuanemuy/markdown-peek/commit/dff0e77069ca3d910df3b8145511f83deb1cddf6))
+
+
+### Features
+
+* add shared types and client utility modules ([f478526](https://github.com/tuanemuy/markdown-peek/commit/f4785261fe856a96140b43564959d86cd4c161c8))
+
 # [1.4.0](https://github.com/tuanemuy/markdown-peek/compare/v1.3.1...v1.4.0) (2026-03-03)
 
 
