@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/tuanemuy/markdown-peek/compare/v1.5.0...v1.5.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* remove duplicate infrastructure/logger.ts and move logger to lib/ ([52501a1](https://github.com/tuanemuy/markdown-peek/commit/52501a1491a5315b17d44eeff5dabfe7d0acd9ab))
+
 # [1.5.0](https://github.com/tuanemuy/markdown-peek/compare/v1.4.0...v1.5.0) (2026-03-03)
 
 
