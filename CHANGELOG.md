@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/tuanemuy/markdown-peek/compare/v1.3.1...v1.4.0) (2026-03-03)
+
+
+### Bug Fixes
+
+* use .js for generated favicon module to match client-bundle pattern ([303813f](https://github.com/tuanemuy/markdown-peek/commit/303813fe5551a9c51ab258fca38fe501b9ab649b))
+
+
+### Features
+
+* add favicon support ([fe2e0d5](https://github.com/tuanemuy/markdown-peek/commit/fe2e0d58640728b182fc50616cd3dd872f15d398))
+
 ## [1.3.1](https://github.com/tuanemuy/markdown-peek/compare/v1.3.0...v1.3.1) (2026-03-02)
 
 
