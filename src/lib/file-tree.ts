@@ -4,9 +4,9 @@ import { join, relative } from "node:path";
 import ignore, { type Ignore } from "ignore";
 import { type TypedError, typedError } from "../core/error.js";
 import type { FileTreeNode } from "../core/file-tree.js";
-import { logger } from "../core/logger.js";
 import type { Result } from "../core/result.js";
 import { err, ok } from "../core/result.js";
+import { logger } from "./logger.js";
 import { readTextFile } from "./read-text-file.js";
 
 const DEFAULT_IGNORE_PATTERNS = [

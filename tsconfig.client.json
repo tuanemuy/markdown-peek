@@ -24,6 +24,6 @@
     "src/core/file-tree.ts",
     "src/core/initial-state.ts",
     "src/core/css.d.ts",
-    "src/core/logger.ts"
+    "src/lib/logger.ts"
   ]
 }

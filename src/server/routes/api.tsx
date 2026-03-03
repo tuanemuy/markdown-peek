@@ -1,8 +1,8 @@
 import { normalize, resolve } from "node:path";
 import { Hono } from "hono";
-import { logger } from "../../core/logger.js";
 import { isWithinBase } from "../../core/path.js";
 import type { FileTreeCache } from "../../lib/file-tree-cache.js";
+import { logger } from "../../lib/logger.js";
 import { renderMarkdown } from "../../lib/markdown.js";
 import { readTextFile } from "../../lib/read-text-file.js";
 

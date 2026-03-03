@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { Hono } from "hono";
 import { MarkdownContent } from "../../components/layout/markdown-content.js";
-import { logger } from "../../core/logger.js";
+import { logger } from "../../lib/logger.js";
 import { renderMarkdown } from "../../lib/markdown.js";
 import { readTextFile } from "../../lib/read-text-file.js";
 import type { ResolvedStyles } from "../../lib/styles.js";

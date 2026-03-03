@@ -1,4 +1,4 @@
-import { logger } from "../../core/logger.js";
+import { logger } from "../../lib/logger.js";
 import { normalizePath } from "./path-utils.js";
 
 const SSE_MAX_RETRIES = 10;
