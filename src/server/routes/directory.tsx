@@ -1,3 +1,4 @@
+import { access } from "node:fs/promises";
 import { basename, normalize, resolve } from "node:path";
 import { Hono } from "hono";
 import { MainContent } from "../../components/layout/main-content.js";
@@ -7,6 +8,7 @@ import { Sidebar } from "../../components/navigation/sidebar.js";
 import type { ContentType } from "../../core/content-type.js";
 import { getContentType } from "../../core/content-type.js";
 import type { FileTreeNode } from "../../core/file-tree.js";
+import { FULLSCREEN_IFRAME_STYLE } from "../../core/iframe-style.js";
 import { isWithinBase } from "../../core/path.js";
 import type { FileTreeCache } from "../../lib/file-tree-cache.js";
 import { logger } from "../../lib/logger.js";
@@ -64,7 +66,7 @@ function renderDirectoryView(params: {
           <iframe
             title={fileTitle}
             src={`/api/raw?path=${encodeURIComponent(currentPath)}`}
-            style="border:none;width:100%;height:100%;position:absolute;top:0;left:0"
+            style={FULLSCREEN_IFRAME_STYLE}
           />
         </MainContent>
       ) : (
@@ -82,8 +84,17 @@ async function renderFileContent(
   fullPath: string,
   contentType: ContentType,
 ): Promise<
-  { ok: true; html: string } | { ok: false; status: number; message: string }
+  { ok: true; html: string } | { ok: false; status: 404 | 500; message: string }
 > {
+  if (contentType === "html") {
+    try {
+      await access(fullPath);
+    } catch {
+      return { ok: false, status: 404, message: "File not found" };
+    }
+    return { ok: true, html: "" };
+  }
+
   const result = await readTextFile(fullPath);
   if (!result.ok) {
     if (result.error.type === "file-not-found") {
@@ -91,10 +102,6 @@ async function renderFileContent(
     }
     logger.error("Failed to read file:", result.error);
     return { ok: false, status: 500, message: "Internal server error" };
-  }
-
-  if (contentType === "html") {
-    return { ok: true, html: "" };
   }
   return { ok: true, html: await renderMarkdown(result.value) };
 }
@@ -122,7 +129,7 @@ export function createDirectoryRoutes(
     const fullPath = resolve(dirPath, normalize(firstFile.path));
     const rendered = await renderFileContent(fullPath, contentType);
     if (!rendered.ok) {
-      return c.text(rendered.message, rendered.status as 404 | 500);
+      return c.text(rendered.message, rendered.status);
     }
 
     const dirTitle = basename(dirPath) || dirPath;
@@ -157,7 +164,7 @@ export function createDirectoryRoutes(
 
     const rendered = await renderFileContent(fullPath, contentType);
     if (!rendered.ok) {
-      return c.text(rendered.message, rendered.status as 404 | 500);
+      return c.text(rendered.message, rendered.status);
     }
 
     const treeResult = await treeCache.get();
@@ -194,7 +201,7 @@ export function createDirectoryRoutes(
 
     const rendered = await renderFileContent(fullPath, contentType);
     if (!rendered.ok) {
-      return c.text(rendered.message, rendered.status as 404 | 500);
+      return c.text(rendered.message, rendered.status);
     }
 
     const fileTitle = basename(relativePath);
@@ -210,7 +217,7 @@ export function createDirectoryRoutes(
               <iframe
                 title={fileTitle}
                 src={`/api/raw?path=${encodeURIComponent(relativePath)}`}
-                style="border:none;width:100%;height:100%;position:absolute;top:0;left:0"
+                style={FULLSCREEN_IFRAME_STYLE}
               />
             </main>
           ) : (

@@ -91,6 +91,10 @@ $ peek README.md --css ./custom.css --no-open`,
 
     const isHtmlFileMode = mode === "file" && contentType === "html";
 
+    if (isHtmlFileMode && css) {
+      log.warn("--css option is ignored for HTML file preview");
+    }
+
     if (!isHtmlFileMode) {
       await initMarkdown().catch((e: unknown) => {
         logger.error("Failed to initialize Markdown renderer:", e);

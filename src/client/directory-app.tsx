@@ -6,6 +6,7 @@ import { Sidebar } from "../components/navigation/sidebar.js";
 import type { ContentType } from "../core/content-type.js";
 import { getContentType } from "../core/content-type.js";
 import type { FileTreeNode } from "../core/file-tree.js";
+import { FULLSCREEN_IFRAME_STYLE } from "../core/iframe-style.js";
 import { useNavigation } from "./hooks/use-navigation.js";
 import { useSidebar } from "./hooks/use-sidebar.js";
 import { useSseUpdates } from "./hooks/use-sse-updates.js";
@@ -83,7 +84,7 @@ export function DirectoryApp({
             key={htmlReloadKey}
             title={fileTitle}
             src={`/api/raw?path=${encodeURIComponent(currentPath)}`}
-            style="border:none;width:100%;height:100%;position:absolute;top:0;left:0"
+            style={FULLSCREEN_IFRAME_STYLE}
           />
         </MainContent>
       ) : (

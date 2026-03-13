@@ -1,6 +1,8 @@
 import { normalize, resolve } from "node:path";
 import { Hono } from "hono";
+import renderToString from "preact-render-to-string";
 import { getContentType } from "../../core/content-type.js";
+import { FULLSCREEN_IFRAME_STYLE } from "../../core/iframe-style.js";
 import { isWithinBase } from "../../core/path.js";
 import type { FileTreeCache } from "../../lib/file-tree-cache.js";
 import { logger } from "../../lib/logger.js";
@@ -21,7 +23,9 @@ type DirectoryApiConfig = {
 export type ApiConfig = FileApiConfig | DirectoryApiConfig;
 
 function htmlIframeSnippet(rawUrl: string): string {
-  return `<iframe src="${rawUrl}" style="border:none;width:100%;height:100%;position:absolute;top:0;left:0"></iframe>`;
+  return renderToString(
+    <iframe src={rawUrl} style={FULLSCREEN_IFRAME_STYLE} title="content" />,
+  );
 }
 
 export function createApiRoutes(config: ApiConfig): Hono {
@@ -75,6 +79,10 @@ export function createApiRoutes(config: ApiConfig): Hono {
 
   app.get("/api/raw", async (c) => {
     if (config.mode === "file") {
+      const contentType = getContentType(config.targetPath);
+      if (contentType !== "html") {
+        return c.text("Not found", 404);
+      }
       const result = await readTextFile(config.targetPath);
       if (!result.ok) {
         logger.error("Failed to read file:", result.error);
