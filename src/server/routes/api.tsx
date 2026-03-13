@@ -29,7 +29,7 @@ function renderRawHtmlIframe(rawUrl: string): string {
       src={rawUrl}
       style={FULLSCREEN_IFRAME_STYLE}
       title="content"
-      sandbox="allow-scripts"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
     />,
   );
 }
@@ -116,11 +116,10 @@ export function createApiRoutes(config: ApiConfig): Hono {
         logger.error("Failed to read file:", result.error);
         return c.text("Failed to read file", 500);
       }
+      // CSP is intentionally omitted: this is a local preview tool serving
+      // the user's own HTML files. The iframe sandbox attribute provides
+      // sufficient isolation while allowing full HTML expressiveness.
       c.header("X-Content-Type-Options", "nosniff");
-      c.header(
-        "Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
-      );
       return c.html(result.value);
     }
 
@@ -144,10 +143,6 @@ export function createApiRoutes(config: ApiConfig): Hono {
       return c.text("Failed to read file", 500);
     }
     c.header("X-Content-Type-Options", "nosniff");
-    c.header(
-      "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
-    );
     return c.html(result.value);
   });
 

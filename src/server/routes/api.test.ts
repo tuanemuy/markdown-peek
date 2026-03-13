@@ -125,7 +125,7 @@ describe("api routes - HTML file mode", () => {
     const app = createApiRoutes({ mode: "file", targetPath: testHtmlFile });
     const res = await app.request("/api/raw");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(res.headers.get("Content-Security-Policy")).toContain("default-src");
+    expect(res.headers.get("Content-Security-Policy")).toBeNull();
   });
 
   it("GET /api/raw returns 404 for markdown file", async () => {
@@ -181,7 +181,7 @@ describe("api routes - HTML directory mode", () => {
     });
     const res = await app.request("/api/raw?path=page.html");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(res.headers.get("Content-Security-Policy")).toContain("default-src");
+    expect(res.headers.get("Content-Security-Policy")).toBeNull();
   });
 
   it("GET /api/raw without path returns 400", async () => {

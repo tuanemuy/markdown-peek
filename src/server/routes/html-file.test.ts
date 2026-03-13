@@ -26,7 +26,9 @@ describe("html file routes", () => {
     expect(html).toContain("test.html - peek");
     expect(html).toContain("<iframe");
     expect(html).toContain("/api/raw");
-    expect(html).toContain('sandbox="allow-scripts"');
+    expect(html).toContain(
+      'sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"',
+    );
   });
 
   it("GET / includes SSE reload script", async () => {

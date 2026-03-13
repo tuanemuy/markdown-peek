@@ -28,7 +28,7 @@ export function ContentView({
           title={fileTitle}
           src={rawUrl}
           style={FULLSCREEN_IFRAME_STYLE}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
         />
       </MainContent>
     );

@@ -58,7 +58,7 @@ export function HtmlDocument({ title, rawContentUrl }: HtmlDocumentProps) {
           id="content-frame"
           title={title}
           src={rawContentUrl}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
         />
         <script dangerouslySetInnerHTML={{ __html: sseReloadScript }} />
       </body>
