@@ -79,7 +79,7 @@ export function DirectoryApp({
       />
 
       {contentType === "html" ? (
-        <MainContent>
+        <MainContent class="relative flex-1 overflow-hidden">
           <iframe
             key={htmlReloadKey}
             title={fileTitle}

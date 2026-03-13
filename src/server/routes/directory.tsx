@@ -62,7 +62,7 @@ function renderDirectoryView(params: {
         externalLinkHref={`/${currentPath.split("/").map(encodeURIComponent).join("/")}`}
       />
       {contentType === "html" ? (
-        <MainContent>
+        <MainContent class="relative flex-1 overflow-hidden">
           <iframe
             title={fileTitle}
             src={`/api/raw?path=${encodeURIComponent(currentPath)}`}
