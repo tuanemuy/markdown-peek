@@ -1,6 +1,7 @@
 import { normalize, resolve } from "node:path";
 import { Hono } from "hono";
 import renderToString from "preact-render-to-string";
+import type { ContentType } from "../../core/content-type.js";
 import { getContentType } from "../../core/content-type.js";
 import { FULLSCREEN_IFRAME_STYLE } from "../../core/iframe-style.js";
 import { isWithinBase } from "../../core/path.js";
@@ -22,7 +23,7 @@ type DirectoryApiConfig = {
 
 export type ApiConfig = FileApiConfig | DirectoryApiConfig;
 
-function htmlIframeSnippet(rawUrl: string): string {
+function renderRawHtmlIframe(rawUrl: string): string {
   return renderToString(
     <iframe
       src={rawUrl}
@@ -33,6 +34,32 @@ function htmlIframeSnippet(rawUrl: string): string {
   );
 }
 
+type ResolvedPath = {
+  readonly relativePath: string;
+  readonly fullPath: string;
+  readonly contentType: ContentType;
+};
+
+function resolveAndValidatePath(
+  basePath: string,
+  query: string | undefined,
+):
+  | { ok: true; value: ResolvedPath }
+  | { ok: false; status: 400 | 403 | 404; message: string } {
+  if (!query) {
+    return { ok: false, status: 400, message: "Missing path parameter" };
+  }
+  const fullPath = resolve(basePath, normalize(query));
+  if (!isWithinBase(basePath, fullPath)) {
+    return { ok: false, status: 403, message: "Forbidden" };
+  }
+  const contentType = getContentType(query);
+  if (!contentType) {
+    return { ok: false, status: 404, message: "Not found" };
+  }
+  return { ok: true, value: { relativePath: query, fullPath, contentType } };
+}
+
 export function createApiRoutes(config: ApiConfig): Hono {
   const app = new Hono();
 
@@ -40,7 +67,7 @@ export function createApiRoutes(config: ApiConfig): Hono {
     if (config.mode === "file") {
       const contentType = getContentType(config.targetPath);
       if (contentType === "html") {
-        return c.html(htmlIframeSnippet("/api/raw"));
+        return c.html(renderRawHtmlIframe("/api/raw"));
       }
       const result = await readTextFile(config.targetPath);
       if (!result.ok) {
@@ -50,24 +77,20 @@ export function createApiRoutes(config: ApiConfig): Hono {
       return c.html(await renderMarkdown(result.value));
     }
 
-    const relativePath = c.req.query("path");
-    if (!relativePath) {
-      return c.text("Missing path parameter", 400);
+    const resolved = resolveAndValidatePath(
+      config.targetPath,
+      c.req.query("path"),
+    );
+    if (!resolved.ok) {
+      return c.text(resolved.message, resolved.status);
     }
-
-    const fullPath = resolve(config.targetPath, normalize(relativePath));
-    if (!isWithinBase(config.targetPath, fullPath)) {
-      return c.text("Forbidden", 403);
-    }
-
-    const contentType = getContentType(relativePath);
-    if (!contentType) {
-      return c.text("Not found", 404);
-    }
+    const { relativePath, fullPath, contentType } = resolved.value;
 
     if (contentType === "html") {
       return c.html(
-        htmlIframeSnippet(`/api/raw?path=${encodeURIComponent(relativePath)}`),
+        renderRawHtmlIframe(
+          `/api/raw?path=${encodeURIComponent(relativePath)}`,
+        ),
       );
     }
 
@@ -94,26 +117,25 @@ export function createApiRoutes(config: ApiConfig): Hono {
         return c.text("Failed to read file", 500);
       }
       c.header("X-Content-Type-Options", "nosniff");
-      c.header("Content-Security-Policy", "default-src 'self' 'unsafe-inline'");
+      c.header(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+      );
       return c.html(result.value);
     }
 
-    const relativePath = c.req.query("path");
-    if (!relativePath) {
-      return c.text("Missing path parameter", 400);
+    const resolved = resolveAndValidatePath(
+      config.targetPath,
+      c.req.query("path"),
+    );
+    if (!resolved.ok) {
+      return c.text(resolved.message, resolved.status);
     }
-
-    const fullPath = resolve(config.targetPath, normalize(relativePath));
-    if (!isWithinBase(config.targetPath, fullPath)) {
-      return c.text("Forbidden", 403);
-    }
-
-    const contentType = getContentType(relativePath);
-    if (contentType !== "html") {
+    if (resolved.value.contentType !== "html") {
       return c.text("Not found", 404);
     }
 
-    const result = await readTextFile(fullPath);
+    const result = await readTextFile(resolved.value.fullPath);
     if (!result.ok) {
       if (result.error.type === "file-not-found") {
         return c.text("File not found", 404);
@@ -122,7 +144,10 @@ export function createApiRoutes(config: ApiConfig): Hono {
       return c.text("Failed to read file", 500);
     }
     c.header("X-Content-Type-Options", "nosniff");
-    c.header("Content-Security-Policy", "default-src 'self' 'unsafe-inline'");
+    c.header(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'",
+    );
     return c.html(result.value);
   });
 

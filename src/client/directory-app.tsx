@@ -1,12 +1,10 @@
 import { useRef, useState } from "preact/hooks";
-import { MainContent } from "../components/layout/main-content.js";
-import { MarkdownContent } from "../components/layout/markdown-content.js";
+import { ContentView } from "../components/content-view.js";
 import { PageHeader } from "../components/layout/page-header.js";
 import { Sidebar } from "../components/navigation/sidebar.js";
 import type { ContentType } from "../core/content-type.js";
 import { getContentType } from "../core/content-type.js";
 import type { FileTreeNode } from "../core/file-tree.js";
-import { FULLSCREEN_IFRAME_STYLE } from "../core/iframe-style.js";
 import { useNavigation } from "./hooks/use-navigation.js";
 import { useSidebar } from "./hooks/use-sidebar.js";
 import { useSseUpdates } from "./hooks/use-sse-updates.js";
@@ -52,11 +50,14 @@ export function DirectoryApp({
     setHtmlReloadKey(0);
   });
 
+  const contentTypeRef = useRef(contentType);
+  contentTypeRef.current = contentType;
+
   useSseUpdates({
     getCurrentPath: () => currentPathRef.current,
+    getCurrentContentType: () => contentTypeRef.current,
     onContentUpdate: (html) => {
-      const ct = getContentType(currentPathRef.current);
-      if (ct === "html") {
+      if (contentTypeRef.current === "html") {
         setHtmlReloadKey((k) => k + 1);
       } else {
         setContent(html);
@@ -83,23 +84,13 @@ export function DirectoryApp({
         externalLinkHref={`/${currentPath.split("/").map(encodeURIComponent).join("/")}`}
       />
 
-      {contentType === "html" ? (
-        <MainContent class="relative flex-1 overflow-hidden">
-          <iframe
-            key={htmlReloadKey}
-            title={fileTitle}
-            src={`/api/raw?path=${encodeURIComponent(currentPath)}`}
-            style={FULLSCREEN_IFRAME_STYLE}
-            sandbox="allow-scripts"
-          />
-        </MainContent>
-      ) : (
-        <MainContent class="px-5 sm:px-10 py-5 sm:py-10">
-          <div class="max-w-4xl mx-auto">
-            <MarkdownContent htmlContent={content} />
-          </div>
-        </MainContent>
-      )}
+      <ContentView
+        contentType={contentType}
+        fileTitle={fileTitle}
+        rawUrl={`/api/raw?path=${encodeURIComponent(currentPath)}`}
+        htmlContent={content}
+        htmlReloadKey={htmlReloadKey}
+      />
     </>
   );
 }

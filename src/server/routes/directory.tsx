@@ -2,18 +2,17 @@ import { constants } from "node:fs";
 import { access } from "node:fs/promises";
 import { basename, normalize, resolve } from "node:path";
 import { Hono } from "hono";
-import { MainContent } from "../../components/layout/main-content.js";
-import { MarkdownContent } from "../../components/layout/markdown-content.js";
+import { ContentView } from "../../components/content-view.js";
 import { PageHeader } from "../../components/layout/page-header.js";
 import { Sidebar } from "../../components/navigation/sidebar.js";
 import type { ContentType } from "../../core/content-type.js";
 import { getContentType } from "../../core/content-type.js";
 import type { FileTreeNode } from "../../core/file-tree.js";
-import { FULLSCREEN_IFRAME_STYLE } from "../../core/iframe-style.js";
 import { isWithinBase } from "../../core/path.js";
 import type { FileTreeCache } from "../../lib/file-tree-cache.js";
 import { logger } from "../../lib/logger.js";
 import { renderMarkdown } from "../../lib/markdown.js";
+import { isNodeError } from "../../lib/node-error.js";
 import { readTextFile } from "../../lib/read-text-file.js";
 import type { ResolvedStyles } from "../../lib/styles.js";
 import { Document, renderDocument } from "../renderer/document.js";
@@ -62,22 +61,12 @@ function renderDirectoryView(params: {
         showSidebarToggle
         externalLinkHref={`/${currentPath.split("/").map(encodeURIComponent).join("/")}`}
       />
-      {contentType === "html" ? (
-        <MainContent class="relative flex-1 overflow-hidden">
-          <iframe
-            title={fileTitle}
-            src={`/api/raw?path=${encodeURIComponent(currentPath)}`}
-            style={FULLSCREEN_IFRAME_STYLE}
-            sandbox="allow-scripts"
-          />
-        </MainContent>
-      ) : (
-        <MainContent class="px-5 sm:px-10 py-5 sm:py-10">
-          <div class="max-w-4xl mx-auto">
-            <MarkdownContent htmlContent={html} />
-          </div>
-        </MainContent>
-      )}
+      <ContentView
+        contentType={contentType}
+        fileTitle={fileTitle}
+        rawUrl={`/api/raw?path=${encodeURIComponent(currentPath)}`}
+        htmlContent={html}
+      />
     </Document>,
   );
 }
@@ -91,8 +80,12 @@ async function renderFileContent(
   if (contentType === "html") {
     try {
       await access(fullPath, constants.R_OK);
-    } catch {
-      return { ok: false, status: 404, message: "File not found" };
+    } catch (e: unknown) {
+      if (isNodeError(e) && e.code === "ENOENT") {
+        return { ok: false, status: 404, message: "File not found" };
+      }
+      logger.error("Failed to access file:", e);
+      return { ok: false, status: 500, message: "Internal server error" };
     }
     // HTML content is served via /api/raw iframe; no rendered HTML needed here
     return { ok: true, html: "" };
@@ -219,22 +212,13 @@ export function createDirectoryRoutes(
           styles={styles}
           initialState={{ mode: "file", content: rendered.html }}
         >
-          {contentType === "html" ? (
-            <main>
-              <iframe
-                title={fileTitle}
-                src={`/api/raw?path=${encodeURIComponent(relativePath)}`}
-                style={FULLSCREEN_IFRAME_STYLE}
-                sandbox="allow-scripts"
-              />
-            </main>
-          ) : (
-            <main class="px-2 sm:px-5 py-5 sm:py-15">
-              <div class="max-w-4xl mx-auto">
-                <MarkdownContent htmlContent={rendered.html} />
-              </div>
-            </main>
-          )}
+          <ContentView
+            contentType={contentType}
+            fileTitle={fileTitle}
+            rawUrl={`/api/raw?path=${encodeURIComponent(relativePath)}`}
+            htmlContent={rendered.html}
+            markdownClass="px-2 sm:px-5 py-5 sm:py-15"
+          />
         </Document>,
       ),
     );

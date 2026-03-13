@@ -1,4 +1,5 @@
 import { useEffect } from "preact/hooks";
+import type { ContentType } from "../../core/content-type.js";
 import type { FileTreeNode } from "../../core/file-tree.js";
 import { fetchContent, fetchTree } from "../lib/api-client.js";
 import { normalizePath } from "../lib/path-utils.js";
@@ -7,18 +8,24 @@ import { createSseConnection } from "../lib/sse.js";
 /**
  * SSE live-update hook.
  *
- * Directory mode: pass `getCurrentPath` and `onTreeUpdate` to refresh
- * only the active file and tree on server events.
- * File mode: omit both — every file-changed event refreshes content.
+ * Directory mode: pass `getCurrentPath`, `getCurrentContentType`, and
+ * `onTreeUpdate` to refresh only the active file and tree on server events.
+ * File mode: omit all three — every file-changed event refreshes content.
  */
 export function useSseUpdates(params: {
   readonly onContentUpdate: (html: string) => void;
   readonly getCurrentPath?: () => string;
+  readonly getCurrentContentType?: () => ContentType;
   readonly onTreeUpdate?: (tree: readonly FileTreeNode[]) => void;
 }): void {
   // All callbacks are expected to be stable (state setters) or accessed via
-  // getCurrentPath (ref-based getter). This allows [] deps safely.
-  const { onContentUpdate, getCurrentPath, onTreeUpdate } = params;
+  // getCurrentPath / getCurrentContentType (ref-based getters). This allows [] deps safely.
+  const {
+    onContentUpdate,
+    getCurrentPath,
+    getCurrentContentType,
+    onTreeUpdate,
+  } = params;
 
   useEffect(() => {
     const cleanup = createSseConnection({
@@ -28,6 +35,11 @@ export function useSseUpdates(params: {
           if (changedPath === null) return;
           const current = getCurrentPath();
           if (normalizePath(changedPath) !== normalizePath(current)) return;
+          // HTML files are served via iframe; just notify the callback to bump the reload key
+          if (getCurrentContentType?.() === "html") {
+            onContentUpdate("");
+            return;
+          }
           fetchContent(current)
             .then((html) => {
               if (html !== null) onContentUpdate(html);

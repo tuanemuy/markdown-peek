@@ -5,4 +5,4 @@ export const FULLSCREEN_IFRAME_STYLE = {
   position: "absolute",
   top: "0",
   left: "0",
-};
+} as const;

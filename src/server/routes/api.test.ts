@@ -120,6 +120,28 @@ describe("api routes - HTML file mode", () => {
     expect(html).toContain("<h1>HTML Test</h1>");
     expect(html).toContain("Hello");
   });
+
+  it("GET /api/raw returns security headers for HTML file", async () => {
+    const app = createApiRoutes({ mode: "file", targetPath: testHtmlFile });
+    const res = await app.request("/api/raw");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(res.headers.get("Content-Security-Policy")).toContain("default-src");
+  });
+
+  it("GET /api/raw returns 404 for markdown file", async () => {
+    const app = createApiRoutes({ mode: "file", targetPath: testFile });
+    const res = await app.request("/api/raw");
+    expect(res.status).toBe(404);
+  });
+
+  it("GET /api/raw returns 500 for non-existent HTML file", async () => {
+    const app = createApiRoutes({
+      mode: "file",
+      targetPath: join(testDir, "nonexistent.html"),
+    });
+    const res = await app.request("/api/raw");
+    expect(res.status).toBe(500);
+  });
 });
 
 describe("api routes - HTML directory mode", () => {
@@ -148,6 +170,18 @@ describe("api routes - HTML directory mode", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("<h1>HTML Test</h1>");
+  });
+
+  it("GET /api/raw?path=page.html returns security headers", async () => {
+    const treeCache = createFileTreeCache(testDir);
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache,
+    });
+    const res = await app.request("/api/raw?path=page.html");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(res.headers.get("Content-Security-Policy")).toContain("default-src");
   });
 
   it("GET /api/raw without path returns 400", async () => {
