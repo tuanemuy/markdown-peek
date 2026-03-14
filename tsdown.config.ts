@@ -5,5 +5,17 @@ export default defineConfig({
   outDir: "dist",
   format: "esm",
   clean: true,
-  loader: { ".css": "text" },
+  plugins: [
+    {
+      name: "css-as-text",
+      transform(code, id) {
+        if (id.endsWith(".css")) {
+          return {
+            code: `export default ${JSON.stringify(code)};`,
+            moduleType: "js",
+          };
+        }
+      },
+    },
+  ],
 });
