@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/tuanemuy/markdown-peek/compare/v1.6.2...v1.6.3) (2026-03-14)
+
+
+### Bug Fixes
+
+* remove hardcoded dotfile exclusion and framework-specific ignore patterns ([596ee85](https://github.com/tuanemuy/markdown-peek/commit/596ee85f5e117c0b856dd3b20a3e4e967dc1f33d))
+
 ## [1.6.2](https://github.com/tuanemuy/markdown-peek/compare/v1.6.1...v1.6.2) (2026-03-14)
 
 
