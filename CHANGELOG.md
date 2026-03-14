@@ -1,3 +1,10 @@
+## [1.6.4](https://github.com/tuanemuy/peek/compare/v1.6.3...v1.6.4) (2026-03-14)
+
+
+### Bug Fixes
+
+* update repository URL from peeks to peek ([7ae4f5f](https://github.com/tuanemuy/peek/commit/7ae4f5ff3663e541bac9208710ee93c556025d8d))
+
 ## [1.6.3](https://github.com/tuanemuy/markdown-peek/compare/v1.6.2...v1.6.3) (2026-03-14)
 
 
