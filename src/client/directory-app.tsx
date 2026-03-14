@@ -38,13 +38,13 @@ export function DirectoryApp({
   const sidebar = useSidebar();
 
   useNavigation((path, html) => {
-    currentPathRef.current = path;
-    setCurrentPath(path);
     const ct = getContentType(path);
     if (!ct) {
       console.error(`Unexpected unsupported file type: ${path}`);
       return;
     }
+    currentPathRef.current = path;
+    setCurrentPath(path);
     setContentType(ct);
     setContent(html);
     setHtmlReloadKey(0);
@@ -56,13 +56,8 @@ export function DirectoryApp({
   useSseUpdates({
     getCurrentPath: () => currentPathRef.current,
     getCurrentContentType: () => contentTypeRef.current,
-    onContentUpdate: (html) => {
-      if (contentTypeRef.current === "html") {
-        setHtmlReloadKey((k) => k + 1);
-      } else {
-        setContent(html);
-      }
-    },
+    onContentUpdate: setContent,
+    onHtmlReload: () => setHtmlReloadKey((k) => k + 1),
     onTreeUpdate: setTree,
   });
 

@@ -7,9 +7,14 @@ const EXTENSION_MAP: ReadonlyMap<string, ContentType> = new Map([
 ]);
 
 function getExtension(filePath: string): string {
-  const lastDot = filePath.lastIndexOf(".");
-  if (lastDot === -1 || lastDot === filePath.length - 1) return "";
-  return filePath.slice(lastDot).toLowerCase();
+  const lastSep = Math.max(
+    filePath.lastIndexOf("/"),
+    filePath.lastIndexOf("\\"),
+  );
+  const name = lastSep === -1 ? filePath : filePath.slice(lastSep + 1);
+  const lastDot = name.lastIndexOf(".");
+  if (lastDot === -1 || lastDot === name.length - 1) return "";
+  return name.slice(lastDot).toLowerCase();
 }
 
 export function getContentType(filePath: string): ContentType | null {

@@ -46,11 +46,13 @@ afterEach(() => {
 
 describe("useSseUpdates", () => {
   describe("directory mode with HTML contentType", () => {
-    it("calls onContentUpdate with empty string and skips fetchContent for HTML files", () => {
+    it("calls onHtmlReload and skips fetchContent for HTML files", () => {
       const onContentUpdate = vi.fn();
+      const onHtmlReload = vi.fn();
 
       useSseUpdates({
         onContentUpdate,
+        onHtmlReload,
         getCurrentPath: () => "docs/page.html",
         getCurrentContentType: () => "html",
         onTreeUpdate: vi.fn(),
@@ -59,15 +61,18 @@ describe("useSseUpdates", () => {
       const { onFileChanged } = getSseCallbacks();
       onFileChanged("docs/page.html");
 
-      expect(onContentUpdate).toHaveBeenCalledWith("");
+      expect(onHtmlReload).toHaveBeenCalledOnce();
+      expect(onContentUpdate).not.toHaveBeenCalled();
       expect(fetchContent).not.toHaveBeenCalled();
     });
 
-    it("does not call onContentUpdate for HTML files when path does not match", () => {
+    it("does not call onHtmlReload for HTML files when path does not match", () => {
       const onContentUpdate = vi.fn();
+      const onHtmlReload = vi.fn();
 
       useSseUpdates({
         onContentUpdate,
+        onHtmlReload,
         getCurrentPath: () => "docs/page.html",
         getCurrentContentType: () => "html",
         onTreeUpdate: vi.fn(),
@@ -76,13 +81,14 @@ describe("useSseUpdates", () => {
       const { onFileChanged } = getSseCallbacks();
       onFileChanged("other/file.html");
 
+      expect(onHtmlReload).not.toHaveBeenCalled();
       expect(onContentUpdate).not.toHaveBeenCalled();
       expect(fetchContent).not.toHaveBeenCalled();
     });
   });
 
   describe("directory mode with markdown contentType", () => {
-    it("calls fetchContent for markdown files", async () => {
+    it("calls fetchContent with signal for markdown files", async () => {
       const onContentUpdate = vi.fn();
 
       useSseUpdates({
@@ -97,7 +103,9 @@ describe("useSseUpdates", () => {
 
       // Wait for the fetchContent promise to resolve
       await vi.waitFor(() => {
-        expect(fetchContent).toHaveBeenCalledWith("docs/readme.md");
+        expect(fetchContent).toHaveBeenCalledWith("docs/readme.md", {
+          signal: expect.any(AbortSignal),
+        });
         expect(onContentUpdate).toHaveBeenCalledWith("<p>content</p>");
       });
     });
@@ -106,11 +114,13 @@ describe("useSseUpdates", () => {
   describe("directory mode HTML→MD→HTML file transitions", () => {
     it("changes behavior when contentType switches from HTML to MD to HTML", async () => {
       const onContentUpdate = vi.fn();
+      const onHtmlReload = vi.fn();
       let currentPath = "page.html";
       let currentContentType: ContentType = "html";
 
       useSseUpdates({
         onContentUpdate,
+        onHtmlReload,
         getCurrentPath: () => currentPath,
         getCurrentContentType: () => currentContentType,
         onTreeUpdate: vi.fn(),
@@ -118,30 +128,36 @@ describe("useSseUpdates", () => {
 
       const { onFileChanged } = getSseCallbacks();
 
-      // Phase 1: HTML file — should call onContentUpdate(""), skip fetchContent
+      // Phase 1: HTML file — should call onHtmlReload, skip fetchContent
       onFileChanged("page.html");
-      expect(onContentUpdate).toHaveBeenCalledWith("");
+      expect(onHtmlReload).toHaveBeenCalledOnce();
+      expect(onContentUpdate).not.toHaveBeenCalled();
       expect(fetchContent).not.toHaveBeenCalled();
 
       // Phase 2: Navigate to MD (simulate DirectoryApp state change)
       currentPath = "readme.md";
       currentContentType = "markdown";
-      onContentUpdate.mockClear();
+      onHtmlReload.mockClear();
 
       onFileChanged("readme.md");
       await vi.waitFor(() => {
-        expect(fetchContent).toHaveBeenCalledWith("readme.md");
+        expect(fetchContent).toHaveBeenCalledWith("readme.md", {
+          signal: expect.any(AbortSignal),
+        });
         expect(onContentUpdate).toHaveBeenCalledWith("<p>content</p>");
       });
+      expect(onHtmlReload).not.toHaveBeenCalled();
 
       // Phase 3: Navigate back to HTML
       currentPath = "page.html";
       currentContentType = "html";
       onContentUpdate.mockClear();
+      onHtmlReload.mockClear();
       vi.mocked(fetchContent).mockClear();
 
       onFileChanged("page.html");
-      expect(onContentUpdate).toHaveBeenCalledWith("");
+      expect(onHtmlReload).toHaveBeenCalledOnce();
+      expect(onContentUpdate).not.toHaveBeenCalled();
       expect(fetchContent).not.toHaveBeenCalled();
     });
   });
@@ -183,7 +199,7 @@ describe("useSseUpdates", () => {
   });
 
   describe("file mode", () => {
-    it("always calls fetchContent without path argument", async () => {
+    it("always calls fetchContent with signal and without path argument", async () => {
       const onContentUpdate = vi.fn();
 
       useSseUpdates({
@@ -194,7 +210,9 @@ describe("useSseUpdates", () => {
       onFileChanged("any/file.md");
 
       await vi.waitFor(() => {
-        expect(fetchContent).toHaveBeenCalledWith();
+        expect(fetchContent).toHaveBeenCalledWith(undefined, {
+          signal: expect.any(AbortSignal),
+        });
         expect(onContentUpdate).toHaveBeenCalledWith("<p>content</p>");
       });
     });
@@ -221,7 +239,9 @@ describe("useSseUpdates", () => {
       onTreeChanged?.();
 
       await vi.waitFor(() => {
-        expect(fetchTree).toHaveBeenCalled();
+        expect(fetchTree).toHaveBeenCalledWith({
+          signal: expect.any(AbortSignal),
+        });
         expect(onTreeUpdate).toHaveBeenCalledWith(treeData);
       });
     });
@@ -233,6 +253,119 @@ describe("useSseUpdates", () => {
 
       const { onTreeChanged } = getSseCallbacks();
       expect(onTreeChanged).toBeUndefined();
+    });
+
+    it("does not call onTreeUpdate when fetchTree returns null", async () => {
+      const onTreeUpdate = vi.fn();
+      vi.mocked(fetchTree).mockResolvedValue(null);
+
+      useSseUpdates({
+        onContentUpdate: vi.fn(),
+        getCurrentPath: () => "readme.md",
+        getCurrentContentType: () => "markdown",
+        onTreeUpdate,
+      });
+
+      const { onTreeChanged } = getSseCallbacks();
+      onTreeChanged?.();
+
+      await vi.waitFor(() => {
+        expect(fetchTree).toHaveBeenCalled();
+      });
+      expect(onTreeUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("abort behavior", () => {
+    it("aborts previous fetchContent when a new file-changed event fires", async () => {
+      const onContentUpdate = vi.fn();
+      let resolveFirst: ((v: string | null) => void) | undefined;
+      const firstPromise = new Promise<string | null>((r) => {
+        resolveFirst = r;
+      });
+      vi.mocked(fetchContent)
+        .mockReturnValueOnce(firstPromise)
+        .mockResolvedValueOnce("<p>second</p>");
+
+      useSseUpdates({
+        onContentUpdate,
+      });
+
+      const { onFileChanged } = getSseCallbacks();
+      // First event starts a fetch
+      onFileChanged("file.md");
+      // Second event should abort the first
+      onFileChanged("file.md");
+
+      // Resolve the first (should be ignored since aborted)
+      resolveFirst?.("<p>first</p>");
+
+      await vi.waitFor(() => {
+        expect(fetchContent).toHaveBeenCalledTimes(2);
+        expect(onContentUpdate).toHaveBeenCalledWith("<p>second</p>");
+      });
+    });
+
+    it("does not call onContentUpdate when fetchContent returns null", async () => {
+      const onContentUpdate = vi.fn();
+      vi.mocked(fetchContent).mockResolvedValue(null);
+
+      useSseUpdates({
+        onContentUpdate,
+      });
+
+      const { onFileChanged } = getSseCallbacks();
+      onFileChanged("file.md");
+
+      await vi.waitFor(() => {
+        expect(fetchContent).toHaveBeenCalled();
+      });
+      expect(onContentUpdate).not.toHaveBeenCalled();
+    });
+
+    it("logs error when fetchContent rejects with non-abort error", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      vi.mocked(fetchContent).mockRejectedValue(new Error("network failure"));
+
+      useSseUpdates({
+        onContentUpdate: vi.fn(),
+      });
+
+      const { onFileChanged } = getSseCallbacks();
+      onFileChanged("file.md");
+
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          "[peek] Failed to refresh content:",
+          expect.any(Error),
+        );
+      });
+      consoleSpy.mockRestore();
+    });
+
+    it("silently ignores AbortError from fetchContent", async () => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const abortError = new DOMException(
+        "The operation was aborted",
+        "AbortError",
+      );
+      vi.mocked(fetchContent).mockRejectedValue(abortError);
+
+      useSseUpdates({
+        onContentUpdate: vi.fn(),
+      });
+
+      const { onFileChanged } = getSseCallbacks();
+      onFileChanged("file.md");
+
+      // Give time for the promise to settle
+      await new Promise((r) => setTimeout(r, 10));
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 });

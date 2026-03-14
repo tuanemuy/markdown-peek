@@ -103,13 +103,14 @@ describe("api routes - directory mode", () => {
 });
 
 describe("api routes - HTML file mode", () => {
-  it("GET /api/content returns iframe snippet for HTML file", async () => {
+  it("GET /api/content returns iframe snippet for HTML file with title", async () => {
     const app = createApiRoutes({ mode: "file", targetPath: testHtmlFile });
     const res = await app.request("/api/content");
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("<iframe");
     expect(html).toContain("/api/raw");
+    expect(html).toContain('title="page.html"');
   });
 
   it("GET /api/raw returns raw HTML content", async () => {
@@ -134,18 +135,20 @@ describe("api routes - HTML file mode", () => {
     expect(res.status).toBe(404);
   });
 
-  it("GET /api/raw returns 500 for non-existent HTML file", async () => {
+  it("GET /api/raw returns 404 for non-existent HTML file", async () => {
     const app = createApiRoutes({
       mode: "file",
       targetPath: join(testDir, "nonexistent.html"),
     });
     const res = await app.request("/api/raw");
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(404);
+    const text = await res.text();
+    expect(text).toBe("File not found");
   });
 });
 
 describe("api routes - HTML directory mode", () => {
-  it("GET /api/content?path=page.html returns iframe snippet", async () => {
+  it("GET /api/content?path=page.html returns iframe snippet with title", async () => {
     const treeCache = createFileTreeCache(testDir);
     const app = createApiRoutes({
       mode: "directory",
@@ -157,6 +160,7 @@ describe("api routes - HTML directory mode", () => {
     const html = await res.text();
     expect(html).toContain("<iframe");
     expect(html).toContain("/api/raw?path=page.html");
+    expect(html).toContain('title="page.html"');
   });
 
   it("GET /api/raw?path=page.html returns raw HTML content", async () => {
@@ -216,18 +220,44 @@ describe("api routes - HTML directory mode", () => {
     const res = await app.request("/api/raw?path=readme.md");
     expect(res.status).toBe(404);
   });
+
+  it("GET /api/raw with nonexistent HTML file returns 404", async () => {
+    const treeCache = createFileTreeCache(testDir);
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache,
+    });
+    const res = await app.request("/api/raw?path=nonexistent.html");
+    expect(res.status).toBe(404);
+    const text = await res.text();
+    expect(text).toBe("File not found");
+  });
+
+  it("GET /api/raw with unsupported extension returns 415", async () => {
+    const treeCache = createFileTreeCache(testDir);
+    const app = createApiRoutes({
+      mode: "directory",
+      targetPath: testDir,
+      treeCache,
+    });
+    const res = await app.request("/api/raw?path=readme.txt");
+    expect(res.status).toBe(415);
+    const text = await res.text();
+    expect(text).toBe("Unsupported file type");
+  });
 });
 
 describe("api routes - file mode edge cases", () => {
-  it("GET /api/content returns 500 when file does not exist", async () => {
+  it("GET /api/content returns 404 when file does not exist", async () => {
     const app = createApiRoutes({
       mode: "file",
       targetPath: join(testDir, "nonexistent.md"),
     });
     const res = await app.request("/api/content");
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(404);
     const text = await res.text();
-    expect(text).toBe("Failed to read file");
+    expect(text).toBe("File not found");
   });
 });
 
@@ -254,7 +284,7 @@ describe("api routes - tree error handling", () => {
 });
 
 describe("api routes - directory mode edge cases", () => {
-  it("GET /api/content with unsupported extension returns 404", async () => {
+  it("GET /api/content with unsupported extension returns 415", async () => {
     const treeCache = createFileTreeCache(testDir);
     const app = createApiRoutes({
       mode: "directory",
@@ -262,7 +292,9 @@ describe("api routes - directory mode edge cases", () => {
       treeCache,
     });
     const res = await app.request("/api/content?path=readme.txt");
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(415);
+    const text = await res.text();
+    expect(text).toBe("Unsupported file type");
   });
 
   it("GET /api/content with ../etc/passwd path traversal returns 403", async () => {

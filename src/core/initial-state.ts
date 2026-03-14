@@ -10,6 +10,12 @@ export type DirectoryInitialState = {
   readonly tree: readonly FileTreeNode[];
 };
 
+/**
+ * Initial state for single-file preview mode.
+ *
+ * In file mode only one file is rendered, so no path, tree, or title
+ * information is needed — the server already knows which file to serve.
+ */
 export type FileInitialState = {
   readonly mode: "file";
   readonly content: string;

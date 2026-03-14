@@ -33,6 +33,22 @@ describe("getContentType", () => {
     expect(getContentType("Makefile")).toBeNull();
     expect(getContentType("README")).toBeNull();
   });
+
+  it("ignores dots in directory names", () => {
+    expect(getContentType("my.project/README")).toBeNull();
+    expect(getContentType("v2.0/notes")).toBeNull();
+    expect(getContentType("my.project/README.md")).toBe("markdown");
+    expect(getContentType("v2.0/page.html")).toBe("html");
+  });
+
+  it("handles Windows-style backslash paths", () => {
+    expect(getContentType("my.project\\README")).toBeNull();
+    expect(getContentType("v2.0\\page.html")).toBe("html");
+  });
+
+  it("returns null for empty string", () => {
+    expect(getContentType("")).toBeNull();
+  });
 });
 
 describe("isSupportedFile", () => {

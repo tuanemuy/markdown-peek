@@ -1,9 +1,12 @@
-import { normalize, resolve } from "node:path";
+import { basename, normalize, resolve } from "node:path";
 import { Hono } from "hono";
 import renderToString from "preact-render-to-string";
 import type { ContentType } from "../../core/content-type.js";
 import { getContentType } from "../../core/content-type.js";
-import { FULLSCREEN_IFRAME_STYLE } from "../../core/iframe-style.js";
+import {
+  FULLSCREEN_IFRAME_STYLE,
+  IFRAME_SANDBOX,
+} from "../../core/iframe-style.js";
 import { isWithinBase } from "../../core/path.js";
 import type { FileTreeCache } from "../../lib/file-tree-cache.js";
 import { logger } from "../../lib/logger.js";
@@ -23,13 +26,13 @@ type DirectoryApiConfig = {
 
 export type ApiConfig = FileApiConfig | DirectoryApiConfig;
 
-function renderRawHtmlIframe(rawUrl: string): string {
+function renderRawHtmlIframe(rawUrl: string, title: string): string {
   return renderToString(
     <iframe
       src={rawUrl}
       style={FULLSCREEN_IFRAME_STYLE}
-      title="content"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+      title={title}
+      sandbox={IFRAME_SANDBOX}
     />,
   );
 }
@@ -45,7 +48,7 @@ function resolveAndValidatePath(
   query: string | undefined,
 ):
   | { ok: true; value: ResolvedPath }
-  | { ok: false; status: 400 | 403 | 404; message: string } {
+  | { ok: false; status: 400 | 403 | 415; message: string } {
   if (!query) {
     return { ok: false, status: 400, message: "Missing path parameter" };
   }
@@ -55,22 +58,28 @@ function resolveAndValidatePath(
   }
   const contentType = getContentType(query);
   if (!contentType) {
-    return { ok: false, status: 404, message: "Not found" };
+    return { ok: false, status: 415, message: "Unsupported file type" };
   }
   return { ok: true, value: { relativePath: query, fullPath, contentType } };
 }
 
 export function createApiRoutes(config: ApiConfig): Hono {
   const app = new Hono();
+  const fileContentType =
+    config.mode === "file" ? getContentType(config.targetPath) : null;
 
   app.get("/api/content", async (c) => {
     if (config.mode === "file") {
-      const contentType = getContentType(config.targetPath);
-      if (contentType === "html") {
-        return c.html(renderRawHtmlIframe("/api/raw"));
+      if (fileContentType === "html") {
+        return c.html(
+          renderRawHtmlIframe("/api/raw", basename(config.targetPath)),
+        );
       }
       const result = await readTextFile(config.targetPath);
       if (!result.ok) {
+        if (result.error.type === "file-not-found") {
+          return c.text("File not found", 404);
+        }
         logger.error("Failed to read file:", result.error);
         return c.text("Failed to read file", 500);
       }
@@ -90,6 +99,7 @@ export function createApiRoutes(config: ApiConfig): Hono {
       return c.html(
         renderRawHtmlIframe(
           `/api/raw?path=${encodeURIComponent(relativePath)}`,
+          basename(relativePath),
         ),
       );
     }
@@ -107,12 +117,14 @@ export function createApiRoutes(config: ApiConfig): Hono {
 
   app.get("/api/raw", async (c) => {
     if (config.mode === "file") {
-      const contentType = getContentType(config.targetPath);
-      if (contentType !== "html") {
+      if (fileContentType !== "html") {
         return c.text("Not found", 404);
       }
       const result = await readTextFile(config.targetPath);
       if (!result.ok) {
+        if (result.error.type === "file-not-found") {
+          return c.text("File not found", 404);
+        }
         logger.error("Failed to read file:", result.error);
         return c.text("Failed to read file", 500);
       }

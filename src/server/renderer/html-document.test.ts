@@ -1,4 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { IFRAME_SANDBOX } from "../../core/iframe-style.js";
+import {
+  SSE_INITIAL_RETRY_MS,
+  SSE_MAX_RETRIES,
+  SSE_MAX_RETRY_MS,
+} from "../../core/sse-constants.js";
 import { renderHtmlDocument } from "./html-document.js";
 
 describe("renderHtmlDocument", () => {
@@ -12,17 +18,34 @@ describe("renderHtmlDocument", () => {
     const html = renderHtmlDocument("test", "/api/raw?file=hello.html");
     expect(html).toContain('src="/api/raw?file=hello.html"');
     expect(html).toContain('id="content-frame"');
-    expect(html).toContain(
-      'sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"',
+    expect(html).toContain(`sandbox="${IFRAME_SANDBOX}"`);
+  });
+
+  it("escapes special characters in title", () => {
+    const html = renderHtmlDocument(
+      '<script>alert("xss")</script>',
+      "/api/raw",
+    );
+    expect(html).not.toContain("<script>alert");
+    expect(html).toContain("&lt;script>");
+    expect(html).toContain("&quot;xss&quot;");
+  });
+
+  it("throws for rawContentUrl not starting with /", () => {
+    expect(() => renderHtmlDocument("test", "http://evil.com")).toThrow(
+      "rawContentUrl must be an absolute path",
+    );
+    expect(() => renderHtmlDocument("test", "relative/path")).toThrow(
+      "rawContentUrl must be an absolute path",
     );
   });
 
   describe("SSE reload script", () => {
-    it("contains exponential backoff parameters", () => {
+    it("contains exponential backoff parameters from shared constants", () => {
       const html = renderHtmlDocument("test", "/api/raw");
-      expect(html).toContain("maxRetries = 10");
-      expect(html).toContain("initialDelay = 1000");
-      expect(html).toContain("maxDelay = 30000");
+      expect(html).toContain(`maxRetries = ${SSE_MAX_RETRIES}`);
+      expect(html).toContain(`initialDelay = ${SSE_INITIAL_RETRY_MS}`);
+      expect(html).toContain(`maxDelay = ${SSE_MAX_RETRY_MS}`);
     });
 
     it("resets retryCount on successful connection via es.onopen", () => {

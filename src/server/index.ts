@@ -1,6 +1,5 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import type { ContentType } from "../core/content-type.js";
 import type { FileTreeCache } from "../lib/file-tree-cache.js";
 import { createFileTreeCache } from "../lib/file-tree-cache.js";
 import type { ResolvedStyles } from "../lib/styles.js";
@@ -15,19 +14,29 @@ import { createHtmlFileRoutes } from "./routes/html-file.js";
 import type { SseManager } from "./routes/sse.js";
 import { createSseManager } from "./routes/sse.js";
 
-type BaseServerConfig = {
-  readonly targetPath: string;
-  readonly port: number;
-  readonly hostname: string;
-  readonly styles: ResolvedStyles;
-};
-
 export type ServerConfig =
-  | (BaseServerConfig & {
+  | {
       readonly mode: "file";
-      readonly contentType: ContentType;
-    })
-  | (BaseServerConfig & { readonly mode: "directory" });
+      readonly contentType: "html";
+      readonly targetPath: string;
+      readonly port: number;
+      readonly hostname: string;
+    }
+  | {
+      readonly mode: "file";
+      readonly contentType: "markdown";
+      readonly targetPath: string;
+      readonly port: number;
+      readonly hostname: string;
+      readonly styles: ResolvedStyles;
+    }
+  | {
+      readonly mode: "directory";
+      readonly targetPath: string;
+      readonly port: number;
+      readonly hostname: string;
+      readonly styles: ResolvedStyles;
+    };
 
 export type ServerInstance = {
   readonly close: () => Promise<void>;
@@ -40,8 +49,13 @@ type AppContext =
   | {
       readonly mode: "file";
       readonly targetPath: string;
+      readonly contentType: "html";
+    }
+  | {
+      readonly mode: "file";
+      readonly targetPath: string;
+      readonly contentType: "markdown";
       readonly styles: ResolvedStyles;
-      readonly contentType: ContentType;
     }
   | {
       readonly mode: "directory";
@@ -73,11 +87,9 @@ function createApp(ctx: AppContext, sse: SseManager): Hono {
     app.route("/", apiRoutes);
 
     if (ctx.contentType === "html") {
-      const htmlFileRoutes = createHtmlFileRoutes(ctx.targetPath);
-      app.route("/", htmlFileRoutes);
+      app.route("/", createHtmlFileRoutes(ctx.targetPath));
     } else {
-      const fileRoutes = createFileRoutes(ctx.targetPath, ctx.styles);
-      app.route("/", fileRoutes);
+      app.route("/", createFileRoutes(ctx.targetPath, ctx.styles));
     }
   } else {
     const apiConfig: ApiConfig = {
@@ -127,12 +139,18 @@ export async function startServer(
           styles: config.styles,
           treeCache: createFileTreeCache(config.targetPath),
         }
-      : {
-          mode: "file",
-          targetPath: config.targetPath,
-          styles: config.styles,
-          contentType: config.contentType,
-        };
+      : config.contentType === "html"
+        ? {
+            mode: "file",
+            targetPath: config.targetPath,
+            contentType: "html",
+          }
+        : {
+            mode: "file",
+            targetPath: config.targetPath,
+            contentType: config.contentType,
+            styles: config.styles,
+          };
 
   const app = createApp(ctx, sse);
   const watcher = setupWatcher(ctx, sse);

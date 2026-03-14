@@ -1,5 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Hono } from "hono";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createFileTreeCache } from "../../lib/file-tree-cache.js";
 import { initMarkdown } from "../../lib/markdown.js";
@@ -24,14 +25,16 @@ afterAll(() => {
   rmSync(testDir, { recursive: true, force: true });
 });
 
+async function createTestApp(): Promise<Hono> {
+  const result = await resolveStyles();
+  if (!result.ok) throw new Error("Failed to resolve styles");
+  const treeCache = createFileTreeCache(testDir);
+  return createDirectoryRoutes(testDir, result.value, treeCache);
+}
+
 describe("directory routes", () => {
   it("GET / returns file tree listing page", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/");
     expect(res.status).toBe(200);
 
@@ -42,12 +45,7 @@ describe("directory routes", () => {
   });
 
   it("GET /view?path=README.md returns sidebar + preview", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=README.md");
     expect(res.status).toBe(200);
 
@@ -59,12 +57,7 @@ describe("directory routes", () => {
   });
 
   it("GET /view?path=docs/guide.md works with nested paths", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=docs/guide.md");
     expect(res.status).toBe(200);
 
@@ -74,34 +67,19 @@ describe("directory routes", () => {
   });
 
   it("GET /view without path redirects to /", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view");
     expect(res.status).toBe(302);
   });
 
   it("GET /view?path=nonexistent.md returns 404", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=nonexistent.md");
     expect(res.status).toBe(404);
   });
 
   it("GET /view with path traversal returns 403", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=../../../etc/passwd");
     expect(res.status).toBe(403);
   });
@@ -109,12 +87,7 @@ describe("directory routes", () => {
 
 describe("directory routes - catch-all path", () => {
   it("GET /README.md returns rendered file preview", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/README.md");
     expect(res.status).toBe(200);
 
@@ -125,12 +98,7 @@ describe("directory routes - catch-all path", () => {
   });
 
   it("GET /docs/guide.md works with nested paths", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/docs/guide.md");
     expect(res.status).toBe(200);
 
@@ -140,23 +108,13 @@ describe("directory routes - catch-all path", () => {
   });
 
   it("GET /nonexistent.md returns 404", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/nonexistent.md");
     expect(res.status).toBe(404);
   });
 
   it("GET /page.html returns rendered page with iframe", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/page.html");
     expect(res.status).toBe(200);
 
@@ -167,23 +125,13 @@ describe("directory routes - catch-all path", () => {
   });
 
   it("GET /somefile.txt returns 404 for unsupported extension", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/somefile.txt");
     expect(res.status).toBe(404);
   });
 
   it("GET with path traversal attempt does not return 200", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     // URL-level path normalization resolves ../ before routing,
     // so the handler either rejects with 403 or treats the encoded
     // dots as a literal filename (404). Either way, traversal is blocked.
@@ -194,34 +142,19 @@ describe("directory routes - catch-all path", () => {
 
 describe("directory routes - security", () => {
   it("GET /view?path=../etc/passwd returns 403", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=../etc/passwd");
     expect(res.status).toBe(403);
   });
 
   it("GET /view?path=./../../etc/passwd returns 403", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=./../../etc/passwd");
     expect(res.status).toBe(403);
   });
 
   it("GET /view?path=page.html returns page with iframe", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=page.html");
     expect(res.status).toBe(200);
 
@@ -232,12 +165,7 @@ describe("directory routes - security", () => {
   });
 
   it("GET /view?path=docs returns 404 for directory path without supported extension", async () => {
-    const result = await resolveStyles();
-    if (!result.ok) throw new Error("Failed to resolve styles");
-    const styles = result.value;
-    const treeCache = createFileTreeCache(testDir);
-    const app = createDirectoryRoutes(testDir, styles, treeCache);
-
+    const app = await createTestApp();
     const res = await app.request("/view?path=docs");
     expect(res.status).toBe(404);
   });

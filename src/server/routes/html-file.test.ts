@@ -1,23 +1,10 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { IFRAME_SANDBOX } from "../../core/iframe-style.js";
 import { createHtmlFileRoutes } from "./html-file.js";
-
-const testDir = join(import.meta.dirname, "__test_fixture_html_file__");
-const testFile = join(testDir, "test.html");
-
-beforeAll(() => {
-  mkdirSync(testDir, { recursive: true });
-  writeFileSync(testFile, "<h1>Hello</h1><p>World</p>");
-});
-
-afterAll(() => {
-  rmSync(testDir, { recursive: true, force: true });
-});
 
 describe("html file routes", () => {
   it("GET / returns HTML document with iframe", async () => {
-    const app = createHtmlFileRoutes(testFile);
+    const app = createHtmlFileRoutes("/tmp/test.html");
     const res = await app.request("/");
     expect(res.status).toBe(200);
 
@@ -26,13 +13,11 @@ describe("html file routes", () => {
     expect(html).toContain("test.html - peek");
     expect(html).toContain("<iframe");
     expect(html).toContain("/api/raw");
-    expect(html).toContain(
-      'sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"',
-    );
+    expect(html).toContain(`sandbox="${IFRAME_SANDBOX}"`);
   });
 
   it("GET / includes SSE reload script", async () => {
-    const app = createHtmlFileRoutes(testFile);
+    const app = createHtmlFileRoutes("/tmp/test.html");
     const res = await app.request("/");
     const html = await res.text();
     expect(html).toContain("EventSource");

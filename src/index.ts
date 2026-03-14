@@ -11,7 +11,6 @@ import { getContentType } from "./core/content-type.js";
 import { logger } from "./lib/logger.js";
 import { initMarkdown } from "./lib/markdown.js";
 import { isNodeError } from "./lib/node-error.js";
-import type { ResolvedStyles } from "./lib/styles.js";
 import { resolveStyles } from "./lib/styles.js";
 import type { ServerConfig } from "./server/index.js";
 import { startServer } from "./server/index.js";
@@ -106,36 +105,46 @@ $ peek README.md --css ./custom.css --no-open`,
       });
     }
 
-    const styles: ResolvedStyles = isHtmlFileMode
-      ? { contentCss: "" }
-      : await resolveStyles(css).then((result) => {
-          if (result.ok) return result.value;
-          s.stop("Failed to resolve styles");
-          const message =
-            result.error.type === "file-not-found"
-              ? `CSS file not found: ${result.error.path}`
-              : `Failed to read CSS file: ${result.error.path}`;
-          cancel(message);
-          return process.exit(1);
-        });
+    let serverConfig: ServerConfig;
 
-    const serverConfig: ServerConfig =
-      mode === "file" && contentType
-        ? {
-            targetPath: fullPath,
-            mode: "file",
-            port,
-            hostname,
-            styles,
-            contentType,
-          }
-        : {
-            targetPath: fullPath,
-            mode: "directory",
-            port,
-            hostname,
-            styles,
-          };
+    if (isHtmlFileMode) {
+      serverConfig = {
+        targetPath: fullPath,
+        mode: "file",
+        port,
+        hostname,
+        contentType: "html",
+      };
+    } else {
+      const styles = await resolveStyles(css).then((result) => {
+        if (result.ok) return result.value;
+        s.stop("Failed to resolve styles");
+        const message =
+          result.error.type === "file-not-found"
+            ? `CSS file not found: ${result.error.path}`
+            : `Failed to read CSS file: ${result.error.path}`;
+        cancel(message);
+        return process.exit(1);
+      });
+
+      serverConfig =
+        mode === "file" && contentType && contentType !== "html"
+          ? {
+              targetPath: fullPath,
+              mode: "file",
+              port,
+              hostname,
+              styles,
+              contentType,
+            }
+          : {
+              targetPath: fullPath,
+              mode: "directory",
+              port,
+              hostname,
+              styles,
+            };
+    }
 
     const server = await startServer(serverConfig).catch((e: unknown) => {
       s.stop("Failed to start server");

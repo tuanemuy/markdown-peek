@@ -1,4 +1,10 @@
 import renderToString from "preact-render-to-string";
+import { IFRAME_SANDBOX } from "../../core/iframe-style.js";
+import {
+  SSE_INITIAL_RETRY_MS,
+  SSE_MAX_RETRIES,
+  SSE_MAX_RETRY_MS,
+} from "../../core/sse-constants.js";
 
 type HtmlDocumentProps = {
   readonly title: string;
@@ -7,10 +13,10 @@ type HtmlDocumentProps = {
 
 export function HtmlDocument({ title, rawContentUrl }: HtmlDocumentProps) {
   const sseReloadScript = `(function () {
-  var maxRetries = 10;
+  var maxRetries = ${SSE_MAX_RETRIES};
   var retryCount = 0;
-  var initialDelay = 1000;
-  var maxDelay = 30000;
+  var initialDelay = ${SSE_INITIAL_RETRY_MS};
+  var maxDelay = ${SSE_MAX_RETRY_MS};
 
   function connect() {
     var es = new EventSource("/sse");
@@ -58,7 +64,7 @@ export function HtmlDocument({ title, rawContentUrl }: HtmlDocumentProps) {
           id="content-frame"
           title={title}
           src={rawContentUrl}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+          sandbox={IFRAME_SANDBOX}
         />
         <script dangerouslySetInnerHTML={{ __html: sseReloadScript }} />
       </body>
@@ -70,5 +76,10 @@ export function renderHtmlDocument(
   title: string,
   rawContentUrl: string,
 ): string {
+  if (!rawContentUrl.startsWith("/")) {
+    throw new Error(
+      `rawContentUrl must be an absolute path, got: ${rawContentUrl}`,
+    );
+  }
   return `<!DOCTYPE html>${renderToString(<HtmlDocument title={title} rawContentUrl={rawContentUrl} />)}`;
 }
