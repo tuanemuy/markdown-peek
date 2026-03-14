@@ -13,7 +13,7 @@ importers:
         version: 1.1.0
       '@hono/node-server':
         specifier: ^1.19.9
-        version: 1.19.11(hono@4.12.3)
+        version: 1.19.11(hono@4.12.7)
       '@mdit/plugin-tasklist':
         specifier: ^0.23.1
         version: 0.23.1(markdown-it@14.1.1)
@@ -25,7 +25,7 @@ importers:
         version: 0.29.3
       hono:
         specifier: ^4.12.3
-        version: 4.12.3
+        version: 4.12.7
       ignore:
         specifier: ^7.0.5
         version: 7.0.5
@@ -1572,8 +1572,8 @@ packages:
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
 
-  hono@4.12.3:
-    resolution: {integrity: sha512-SFsVSjp8sj5UumXOOFlkZOG6XS9SJDKw0TbwFeV+AJ8xlST8kxK5Z/5EYa111UY8732lK2S/xB653ceuaoGwpg==}
+  hono@4.12.7:
+    resolution: {integrity: sha512-jq9l1DM0zVIvsm3lv9Nw9nlJnMNPOcAtsbsgiUhWcFzPE99Gvo6yRTlszSLLYacMeQ6quHD6hMfId8crVHvexw==}
     engines: {node: '>=16.9.0'}
 
   hook-std@4.0.0:
@@ -3049,9 +3049,9 @@ snapshots:
   '@esbuild/win32-x64@0.27.3':
     optional: true
 
-  '@hono/node-server@1.19.11(hono@4.12.3)':
+  '@hono/node-server@1.19.11(hono@4.12.7)':
     dependencies:
-      hono: 4.12.3
+      hono: 4.12.7
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -4140,7 +4140,7 @@ snapshots:
 
   highlight.js@10.7.3: {}
 
-  hono@4.12.3: {}
+  hono@4.12.7: {}
 
   hook-std@4.0.0: {}
 
