@@ -1,3 +1,12 @@
+## [1.6.2](https://github.com/tuanemuy/markdown-peek/compare/v1.6.1...v1.6.2) (2026-03-14)
+
+
+### Bug Fixes
+
+* add explicit node types for tsgo compatibility ([495d57b](https://github.com/tuanemuy/markdown-peek/commit/495d57b8211a2a7b9d3ac355339de97ff7ed6190))
+* migrate CSS imports to ?inline for tsdown v0.21.2 ([a071c2b](https://github.com/tuanemuy/markdown-peek/commit/a071c2bed7148e6a3d5d2ba25413feaff6720791))
+* update tsdown to v0.21.2 and fix CSS text import ([2860a28](https://github.com/tuanemuy/markdown-peek/commit/2860a28e5f476927988095e3dc7fbaba7cbecd8a))
+
 ## [1.6.1](https://github.com/tuanemuy/markdown-peek/compare/v1.6.0...v1.6.1) (2026-03-14)
 
 
