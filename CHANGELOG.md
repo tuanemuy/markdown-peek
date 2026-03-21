@@ -1,3 +1,10 @@
+## [1.6.6](https://github.com/tuanemuy/peek/compare/v1.6.5...v1.6.6) (2026-03-21)
+
+
+### Bug Fixes
+
+* remove explicit pnpm version to use packageManager field ([116a58c](https://github.com/tuanemuy/peek/commit/116a58ca36f9afcc5e1abce9143d2165ffb6f334))
+
 ## [1.6.5](https://github.com/tuanemuy/peek/compare/v1.6.4...v1.6.5) (2026-03-21)
 
 
