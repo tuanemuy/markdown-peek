@@ -1,0 +1,68 @@
+name: Cleanup on merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Move ADRs and clean up
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Find and move ADR files from .issue/ and .pr/ to .adr/
+          moved=false
+
+          for dir in .issue .pr; do
+            for adr in $(find "$dir" -name 'adr*.md' 2>/dev/null); do
+              # Extract issue/pr number from path (e.g., .issue/56/adr.md -> 56)
+              number=$(echo "$adr" | cut -d'/' -f2)
+              padded=$(printf '%04d' "$number")
+
+              # Get issue title from GitHub API for the filename
+              title=$(gh api "repos/${{ github.repository }}/issues/${number}" --jq '.title' 2>/dev/null || echo "")
+              slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+
+              if [ -n "$slug" ]; then
+                dest=".adr/${padded}-${slug}.md"
+              else
+                dest=".adr/${padded}.md"
+              fi
+
+              mkdir -p .adr
+              mv "$adr" "$dest"
+              moved=true
+              echo "Moved $adr -> $dest"
+            done
+          done
+
+          # Remove .issue/ and .pr/ directories
+          removed=false
+          if [ -d .issue ]; then
+            rm -rf .issue
+            removed=true
+          fi
+          if [ -d .pr ]; then
+            rm -rf .pr
+            removed=true
+          fi
+
+          # Commit if there were changes
+          if [ "$moved" = true ] || [ "$removed" = true ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git diff --cached --quiet || git commit -m "chore: archive ADRs and clean up .issue/.pr"
+            git push
+          fi
