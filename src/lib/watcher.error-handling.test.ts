@@ -8,7 +8,13 @@ vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
   return {
     ...actual,
-    watch: vi.fn(() => mockWatcher),
+    watch: vi.fn((...args: unknown[]) => {
+      const cb = args.find((a) => typeof a === "function") as
+        | ((...cbArgs: unknown[]) => void)
+        | undefined;
+      if (cb) mockWatcher.on("change", cb);
+      return mockWatcher;
+    }),
   };
 });
 
@@ -45,12 +51,25 @@ describe("watchFile error handling", () => {
     handle.watchFile("/tmp/test.md", callback);
 
     mockWatcher.emit("error", new Error("EACCES: permission denied"));
-    mockWatcher.emit("change", "test.md");
+    mockWatcher.emit("change", "change");
 
     vi.advanceTimersByTime(200);
     expect(callback).not.toHaveBeenCalled();
 
     handle.close();
+  });
+
+  it("watcher is removed from internal array after error", () => {
+    const handle = createFileWatcher(50);
+    const callback = vi.fn();
+    handle.watchFile("/tmp/test.md", callback);
+
+    mockWatcher.emit("error", new Error("EACCES: permission denied"));
+
+    expect(mockWatcher.close).toHaveBeenCalledTimes(1);
+
+    handle.close();
+    expect(mockWatcher.close).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -92,8 +111,6 @@ describe("watchDirectory error handling", () => {
 
     expect(mockWatcher.close).toHaveBeenCalledTimes(1);
 
-    // handle.close() should not call mockWatcher.close again
-    // because the watcher was already removed from the internal array
     handle.close();
     expect(mockWatcher.close).toHaveBeenCalledTimes(1);
   });
