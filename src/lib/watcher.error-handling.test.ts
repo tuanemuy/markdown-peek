@@ -1,8 +1,8 @@
 import { EventEmitter } from "node:events";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockWatcher = new EventEmitter() as EventEmitter & { close: () => void };
-mockWatcher.close = vi.fn();
+mockWatcher.close = vi.fn(() => mockWatcher.removeAllListeners());
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -16,7 +16,12 @@ const { createFileWatcher } = await import("./watcher.js");
 
 beforeEach(() => {
   mockWatcher.removeAllListeners();
-  vi.clearAllMocks();
+  mockWatcher.close = vi.fn(() => mockWatcher.removeAllListeners());
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("watchFile error handling", () => {
@@ -30,6 +35,20 @@ describe("watchFile error handling", () => {
     }).not.toThrow();
 
     expect(mockWatcher.close).toHaveBeenCalled();
+
+    handle.close();
+  });
+
+  it("callback is not invoked after error closes watcher", () => {
+    const handle = createFileWatcher(50);
+    const callback = vi.fn();
+    handle.watchFile("/tmp/test.md", callback);
+
+    mockWatcher.emit("error", new Error("EACCES: permission denied"));
+    mockWatcher.emit("change", "test.md");
+
+    vi.advanceTimersByTime(200);
+    expect(callback).not.toHaveBeenCalled();
 
     handle.close();
   });
@@ -58,21 +77,24 @@ describe("watchDirectory error handling", () => {
     mockWatcher.emit("error", new Error("EACCES: permission denied"));
     mockWatcher.emit("change", "rename", "test.md");
 
+    vi.advanceTimersByTime(200);
     expect(callback).not.toHaveBeenCalled();
 
     handle.close();
   });
 
-  it("multiple error events do not throw", () => {
+  it("watcher is removed from internal array after error", () => {
     const handle = createFileWatcher(50);
     const callback = vi.fn();
     handle.watchDirectory("/tmp", callback);
 
-    expect(() => {
-      mockWatcher.emit("error", new Error("EACCES: permission denied"));
-      mockWatcher.emit("error", new Error("EACCES: permission denied"));
-    }).not.toThrow();
+    mockWatcher.emit("error", new Error("EACCES: permission denied"));
 
+    expect(mockWatcher.close).toHaveBeenCalledTimes(1);
+
+    // handle.close() should not call mockWatcher.close again
+    // because the watcher was already removed from the internal array
     handle.close();
+    expect(mockWatcher.close).toHaveBeenCalledTimes(1);
   });
 });
