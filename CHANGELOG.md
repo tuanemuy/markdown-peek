@@ -1,3 +1,15 @@
+## [1.6.5](https://github.com/tuanemuy/peek/compare/v1.6.4...v1.6.5) (2026-03-21)
+
+
+### Bug Fixes
+
+* handle EACCES error in directory watcher to prevent crash ([ee76761](https://github.com/tuanemuy/peek/commit/ee7676179f84ebfce7c10a720041c019c76c9483)), closes [#56](https://github.com/tuanemuy/peek/issues/56)
+* improve error handling and tests for file watcher ([1c95f46](https://github.com/tuanemuy/peek/commit/1c95f462aa2a23352b7859d1e1d55f00c9d403b2)), closes [#56](https://github.com/tuanemuy/peek/issues/56)
+* improve mock fidelity in watcher error handling tests ([5d0039a](https://github.com/tuanemuy/peek/commit/5d0039a0b5061627316f7c5df8ca725f971cd6d8)), closes [#56](https://github.com/tuanemuy/peek/issues/56)
+* improve test reliability with proper mock behavior ([2b4fce1](https://github.com/tuanemuy/peek/commit/2b4fce15e31ebfd8be1bf5bc0457e0d504088e4f)), closes [#56](https://github.com/tuanemuy/peek/issues/56)
+* simplify to minimal change - just add watchDirectory error handler ([45b8e42](https://github.com/tuanemuy/peek/commit/45b8e423adf151c575aaa71e0e2755dc1caf5da1)), closes [#56](https://github.com/tuanemuy/peek/issues/56)
+* snapshot watchers array before iterating in close() ([b364df4](https://github.com/tuanemuy/peek/commit/b364df4deb5349da3f997b9fcecff7d2b163a05e)), closes [#56](https://github.com/tuanemuy/peek/issues/56)
+
 ## [1.6.4](https://github.com/tuanemuy/peek/compare/v1.6.3...v1.6.4) (2026-03-14)
 
 
